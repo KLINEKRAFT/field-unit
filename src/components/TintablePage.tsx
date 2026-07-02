@@ -125,14 +125,17 @@ export function TintablePage({ page, defaultVars, children }: TintablePageProps)
   const tint = TINTS.find((t) => t.id === tintId);
 
   return (
-    <div className="relative min-h-full" style={{ ...BLEED, ...(tint?.vars ?? defaultVars) }}>
-      {/* clearance for the swatch strip on the right edge */}
-      <div style={{ paddingRight: 18 }}>{children}</div>
+    <div className="flex min-h-full flex-col" style={{ ...BLEED, ...(tint?.vars ?? defaultVars) }}>
+      <div className="flex-1">{children}</div>
       <TintStrip page={page} active={tintId} />
     </div>
   );
 }
 
+/**
+ * A quiet, centered row of the five palette squares at the very bottom of the
+ * page — part of the instrument, never overlapping its controls.
+ */
 function TintStrip({ page, active }: { page: TintablePageId; active: TintId | undefined }) {
   const update = usePrefs((s) => s.update);
   const pageTints = usePrefs((s) => s.prefs.pageTints);
@@ -147,7 +150,7 @@ function TintStrip({ page, active }: { page: TintablePageId; active: TintId | un
 
   return (
     <div
-      className="fixed right-0 top-1/2 z-30 flex w-[26px] -translate-y-1/2 flex-col items-center"
+      className="flex items-center justify-center gap-1 pb-1 pt-10"
       role="group"
       aria-label="Page background color"
     >
@@ -158,14 +161,14 @@ function TintStrip({ page, active }: { page: TintablePageId; active: TintId | un
           aria-label={`Background: ${t.label}`}
           aria-pressed={active === t.id}
           onClick={() => select(t.id)}
-          className="flex h-8 w-full items-center justify-center"
+          className="flex h-11 w-8 items-center justify-center"
         >
           <span
             aria-hidden
             className="block rounded-[3px] transition-all duration-150"
             style={{
-              width: active === t.id ? 16 : 11,
-              height: active === t.id ? 16 : 11,
+              width: active === t.id ? 17 : 12,
+              height: active === t.id ? 17 : 12,
               background: t.hex,
               boxShadow: active === t.id ? "0 0 0 1.5px var(--ink)" : "0 0 0 1px rgba(8,8,8,0.25)",
             }}

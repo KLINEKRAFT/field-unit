@@ -31,7 +31,7 @@ export function ToolScreen({
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => router.push("/")}
             aria-label="Back to instruments"
             className="-ml-2 flex h-11 w-11 items-center justify-center text-ink"
           >
