@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
 import { MechanicalButton, SpeakerPattern } from "@/components/controls";
+import { Waveform } from "@/components/Waveform";
 import { useRadio } from "@/lib/stores/radio";
 import { playTick } from "@/lib/sound";
 import { motion, useReducedMotion } from "framer-motion";
@@ -52,14 +53,22 @@ export default function RadioPage() {
           </p>
         </section>
 
-        {/* Speaker field */}
-        <motion.div
-          className="flex justify-center text-ink"
-          animate={playing && !reduced ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.85 }}
-          transition={{ repeat: playing ? Infinity : 0, duration: 1.8, ease: "easeInOut" }}
-        >
-          <SpeakerPattern rows={11} cols={11} dotSize={13} gap={11} />
-        </motion.div>
+        {/* Speaker field / live waveform. The waveform is the real signal from
+            the stream (WebAudio); stations that block CORS analysis keep the
+            static speaker pattern instead — never a fake wave. */}
+        {playing && radio.analyser ? (
+          <div className="px-1">
+            <Waveform analyser={radio.analyser} height={150} />
+          </div>
+        ) : (
+          <motion.div
+            className="flex justify-center text-ink"
+            animate={playing && !reduced ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.85 }}
+            transition={{ repeat: playing ? Infinity : 0, duration: 1.8, ease: "easeInOut" }}
+          >
+            <SpeakerPattern rows={11} cols={11} dotSize={13} gap={11} />
+          </motion.div>
+        )}
 
         {/* Tuning scale */}
         <TuningScale band={active?.band} reduced={Boolean(reduced)} />

@@ -140,8 +140,8 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   accent: "orange",
   timeFormat: "24h",
   showSeconds: true,
-  tempUnit: "celsius",
-  windUnit: "kmh",
+  tempUnit: "fahrenheit",
+  windUnit: "mph",
   aiEnabled: false,
   worldClocks: [],
 };

@@ -62,17 +62,17 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
             type="button"
             aria-label="Back to notes"
             onClick={() => router.push("/notes")}
-            className="control flex h-11 w-11 items-center justify-center"
+            className="-ml-2 flex h-11 w-11 items-center justify-center text-ink"
           >
-            <ArrowLeft size={18} aria-hidden />
+            <ArrowLeft size={20} aria-hidden />
           </button>
-          <span className="type-meta">Edited {formatRelative(note.updatedAt)} · Saved locally</span>
-          <div className="flex gap-1">
+          <span className="type-meta">Edited {formatRelative(note.updatedAt)} · Local</span>
+          <div className="flex">
             <button
               type="button"
               aria-label={note.pinned ? "Unpin note" : "Pin note"}
               onClick={() => update(note.id, { pinned: !note.pinned })}
-              className="control flex h-11 w-11 items-center justify-center"
+              className="flex h-11 w-11 items-center justify-center text-ink"
             >
               {note.pinned ? <PinOff size={16} aria-hidden /> : <Pin size={16} aria-hidden />}
             </button>
@@ -80,7 +80,7 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
               type="button"
               aria-label="Delete note"
               onClick={() => setConfirmDelete(true)}
-              className="control flex h-11 w-11 items-center justify-center"
+              className="-mr-2 flex h-11 w-11 items-center justify-center"
               style={{ color: "var(--alert)" }}
             >
               <Trash2 size={16} aria-hidden />
@@ -90,7 +90,7 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
       )}
 
       {confirmDelete && (
-        <div className="panel my-3 flex flex-col gap-3 p-4" role="alertdialog" aria-label="Confirm deletion">
+        <div className="my-3 flex flex-col gap-3 py-2" role="alertdialog" aria-label="Confirm deletion">
           <p className="text-sm">Delete this note permanently?</p>
           <div className="flex gap-2">
             <MechanicalButton variant="ghost" className="flex-1" onClick={() => setConfirmDelete(false)}>
@@ -134,7 +134,7 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
           type="button"
           onClick={() => setFocusMode(!focusMode)}
           aria-label={focusMode ? "Exit focus mode" : "Focus mode"}
-          className="control flex h-11 w-11 items-center justify-center"
+          className="flex h-11 w-11 items-center justify-center text-ink-muted"
         >
           {focusMode ? <Minimize2 size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}
         </button>
@@ -195,11 +195,11 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
                 onChange={(e) => setCheckInput(e.target.value)}
                 placeholder="Add item"
                 aria-label="Add checklist item"
-                className="min-h-[44px] flex-1 rounded-[12px] border border-line bg-surface px-3 text-sm outline-none"
+                className="flat-input flex-1 text-sm"
               />
-              <MechanicalButton size="sm" htmlType="submit" ariaLabel="Add checklist item">
-                <Plus size={16} aria-hidden />
-              </MechanicalButton>
+              <button type="submit" aria-label="Add checklist item" className="flex h-11 w-11 items-center justify-center text-ink">
+                <Plus size={18} aria-hidden />
+              </button>
             </form>
           </section>
 
@@ -213,9 +213,9 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
                   type="button"
                   aria-label={`Remove tag ${t}`}
                   onClick={() => update(note.id, { tags: note.tags.filter((x) => x !== t) })}
-                  className="control flex min-h-[36px] items-center gap-1 px-2.5 text-xs uppercase tracking-wide"
+                  className="flex min-h-[44px] items-center gap-1 text-xs font-bold uppercase tracking-wide text-ink-muted"
                 >
-                  {t} <X size={11} aria-hidden />
+                  #{t} <X size={11} aria-hidden />
                 </button>
               ))}
               <form
@@ -232,7 +232,7 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
                   onChange={(e) => setTagInput(e.target.value)}
                   placeholder="+ tag"
                   aria-label="Add tag"
-                  className="min-h-[36px] w-24 rounded-[10px] border border-line bg-surface px-2 text-xs outline-none"
+                  className="flat-input w-24 text-xs"
                 />
               </form>
             </div>
@@ -255,7 +255,7 @@ export default function NoteEditorPage({ params }: { params: Promise<{ id: strin
             {aiEnabled ? (
               <AIPanel noteId={note.id} />
             ) : (
-              <p className="panel-inset px-4 py-3 text-xs text-ink-muted">
+              <p className="text-xs leading-relaxed text-ink-muted">
                 AI is switched off. All note features work without it — enable AI in Settings to
                 summarize, title, and organize notes via an external provider.
               </p>
@@ -287,33 +287,33 @@ function LinkedItems({
   const event = events.find((e) => e.id === eventId);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       {recording && (
-        <div className="panel-inset flex items-center justify-between px-3 py-2 text-sm">
+        <div className="flex items-center justify-between text-sm hairline-b py-1">
           <span>🎙 {recording.name}</span>
           <button type="button" aria-label="Unlink recording" onClick={() => update(noteId, { recordingId: undefined })} className="h-11 w-11 text-ink-muted"><X size={14} aria-hidden className="mx-auto" /></button>
         </div>
       )}
       {event && (
-        <div className="panel-inset flex items-center justify-between px-3 py-2 text-sm">
+        <div className="flex items-center justify-between text-sm hairline-b py-1">
           <span>📅 {event.title} · {formatDateShort(new Date(event.start))}</span>
           <button type="button" aria-label="Unlink event" onClick={() => update(noteId, { eventId: undefined })} className="h-11 w-11 text-ink-muted"><X size={14} aria-hidden className="mx-auto" /></button>
         </div>
       )}
       {!recording && !event && !showPicker && <p className="type-meta">Nothing linked.</p>}
       {showPicker && (
-        <div className="panel flex flex-col gap-2 p-3">
+        <div className="flex flex-col gap-1 py-2">
           <p className="type-label">Link a recording</p>
           {recordings.length === 0 && <p className="type-meta">No recordings.</p>}
           {recordings.slice(0, 5).map((r) => (
-            <button key={r.id} type="button" className="control min-h-[44px] px-3 text-left text-sm" onClick={() => { update(noteId, { recordingId: r.id }); onDone(); }}>
+            <button key={r.id} type="button" className="min-h-[44px] text-left text-sm hairline-b" onClick={() => { update(noteId, { recordingId: r.id }); onDone(); }}>
               {r.name}
             </button>
           ))}
-          <p className="type-label mt-2">Link an event</p>
+          <p className="type-label mt-3">Link an event</p>
           {events.length === 0 && <p className="type-meta">No events.</p>}
           {events.slice(0, 5).map((e) => (
-            <button key={e.id} type="button" className="control min-h-[44px] px-3 text-left text-sm" onClick={() => { update(noteId, { eventId: e.id }); onDone(); }}>
+            <button key={e.id} type="button" className="min-h-[44px] text-left text-sm hairline-b" onClick={() => { update(noteId, { eventId: e.id }); onDone(); }}>
               {e.title} · {formatDateShort(new Date(e.start))}
             </button>
           ))}
@@ -393,7 +393,7 @@ function AIPanel({ noteId }: { noteId: string }) {
       </div>
       {error && <p className="text-sm" style={{ color: "var(--alert)" }} role="alert">{error}</p>}
       {result && (
-        <div className="panel flex flex-col gap-3 p-4">
+        <div className="flex flex-col gap-3 border-t border-line pt-3">
           <p className="type-label">{AI_ACTIONS[result.action]}</p>
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{result.text}</p>
           <div className="flex gap-2">

@@ -21,6 +21,7 @@ import {
 import { conditionFromCode } from "@/lib/weather/provider";
 import { WeatherGlyph } from "@/components/WeatherGlyph";
 import { DotIcon } from "@/components/DotIcon";
+import { Settings } from "lucide-react";
 
 /** Fixed identity color per instrument, from the kit palette. */
 const TOOL_COLORS = {
@@ -145,7 +146,7 @@ export default function InstrumentBoard() {
   ];
 
   return (
-    <div className="mx-auto max-w-md px-5 pb-8">
+    <div className="mx-auto max-w-md px-6 pb-6">
       {/* Wordmark header */}
       <header className="flex items-start justify-between pb-1 pt-4">
         <h1 className="type-title text-[34px]">
@@ -153,18 +154,27 @@ export default function InstrumentBoard() {
           <br />
           <span className="font-normal lowercase">unit</span>
         </h1>
-        <p className="type-label pt-1 text-right leading-relaxed">
-          Portable
-          <br />
-          Toolkit — 01
-        </p>
+        <div className="flex flex-col items-end gap-2">
+          <p className="type-label pt-1 text-right leading-relaxed">
+            Portable
+            <br />
+            Toolkit — 01
+          </p>
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="-mr-2 flex h-11 w-11 items-center justify-center text-ink-muted"
+          >
+            <Settings size={18} aria-hidden />
+          </Link>
+        </div>
       </header>
-      <p className="type-label pb-5 pt-1 tracking-[0.14em]">
+      <p className="type-label pb-6 pt-1 tracking-[0.14em]">
         {formatDateShort(now)} · {weather?.locationName ?? "Tulsa, OK"}
       </p>
 
-      {/* Instrument cards */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Instruments — flat, no tiles */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-9">
         {cards.map((card, i) => (
           <motion.div
             key={card.href}
@@ -174,7 +184,7 @@ export default function InstrumentBoard() {
           >
             <Link
               href={card.href}
-              className="panel flex min-h-[168px] flex-col justify-between p-4 transition-transform duration-150 active:scale-[0.985]"
+              className="flex min-h-[44px] flex-col gap-3 transition-transform duration-150 active:scale-[0.97]"
             >
               <div className="flex items-start justify-between">
                 <span className="text-ink">{card.icon}</span>

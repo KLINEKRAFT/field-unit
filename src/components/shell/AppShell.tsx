@@ -9,7 +9,6 @@ import { useRadio } from "@/lib/stores/radio";
 import { useRecordings } from "@/lib/stores/recordings";
 import { useWeather } from "@/lib/stores/weather";
 import { useTimer } from "@/lib/stores/timer";
-import { BottomNavigation } from "./BottomNavigation";
 import { AlarmEngine } from "./AlarmEngine";
 import { OfflineIndicator } from "./OfflineIndicator";
 
@@ -75,14 +74,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
       </main>
-      <BottomNavigation />
       <AlarmEngine />
       <OfflineIndicator />
       {updateReady && (
         <div
           role="status"
           className="fixed left-1/2 z-30 -translate-x-1/2"
-          style={{ bottom: "calc(var(--sab) + 72px)" }}
+          style={{ bottom: "calc(var(--sab) + 20px)" }}
         >
           <button
             type="button"

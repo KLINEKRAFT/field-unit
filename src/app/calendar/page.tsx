@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEvents, eventsOnDay } from "@/lib/stores/events";
 import { usePrefs } from "@/lib/stores/prefs";
 import { MechanicalButton } from "@/components/controls";
@@ -8,7 +9,7 @@ import { EmptyState } from "@/components/states";
 import { eventsToICS, parseICS, downloadFile } from "@/lib/ics";
 import { formatClock, formatDateLong, pad2 } from "@/lib/format";
 import type { CalendarEvent, EventCategory } from "@/lib/types";
-import { ChevronLeft, ChevronRight, Plus, Download, Upload, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Download, Upload, Trash2 } from "lucide-react";
 
 type View = "month" | "agenda" | "day";
 
@@ -21,6 +22,7 @@ const CATEGORIES: Array<{ id: EventCategory; label: string; color: string }> = [
 ];
 
 export default function CalendarPage() {
+  const router = useRouter();
   const events = useEvents((s) => s.events);
   const importMany = useEvents((s) => s.importMany);
   const [view, setView] = useState<View>("month");
@@ -47,20 +49,30 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 pb-8">
-      <header className="flex items-center justify-between pb-3 pt-3">
-        <h1 className="type-title text-3xl">Calendar</h1>
-        <div className="flex gap-1">
-          <button type="button" aria-label="Export ICS" className="control flex h-11 w-11 items-center justify-center" onClick={() => downloadFile("field-unit-calendar.ics", eventsToICS(events), "text/calendar")}>
-            <Download size={16} aria-hidden />
+    <div className="mx-auto max-w-md px-6 pb-8">
+      <header className="pb-2 pt-1">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            aria-label="Back to instruments"
+            className="-ml-2 flex h-11 w-11 items-center justify-center text-ink"
+          >
+            <ArrowLeft size={20} strokeWidth={2.2} aria-hidden />
           </button>
-          <button type="button" aria-label="Import ICS" className="control flex h-11 w-11 items-center justify-center" onClick={() => fileRef.current?.click()}>
-            <Upload size={16} aria-hidden />
-          </button>
-          <button type="button" aria-label="New event" className="control flex h-11 w-11 items-center justify-center" onClick={() => setEditing("new")}>
-            <Plus size={18} aria-hidden />
-          </button>
+          <div className="flex">
+            <button type="button" aria-label="Export ICS" className="flex h-11 w-11 items-center justify-center text-ink-muted" onClick={() => downloadFile("field-unit-calendar.ics", eventsToICS(events), "text/calendar")}>
+              <Download size={16} aria-hidden />
+            </button>
+            <button type="button" aria-label="Import ICS" className="flex h-11 w-11 items-center justify-center text-ink-muted" onClick={() => fileRef.current?.click()}>
+              <Upload size={16} aria-hidden />
+            </button>
+            <button type="button" aria-label="New event" className="-mr-2 flex h-11 w-11 items-center justify-center text-ink" onClick={() => setEditing("new")}>
+              <Plus size={22} strokeWidth={2.2} aria-hidden />
+            </button>
+          </div>
         </div>
+        <h1 className="type-title pt-1 text-[32px]">Calendar</h1>
         <input
           ref={fileRef}
           type="file"
@@ -76,7 +88,7 @@ export default function CalendarPage() {
       </header>
 
       {importMsg && (
-        <p className="panel-inset mb-3 px-4 py-2 text-sm" role="status">
+        <p className="mb-3 text-sm text-ink-muted" role="status">
           {importMsg}{" "}
           <button type="button" className="underline" onClick={() => setImportMsg(null)}>
             OK
@@ -84,22 +96,29 @@ export default function CalendarPage() {
         </p>
       )}
 
-      <div className="mb-4 grid grid-cols-3 gap-2" role="tablist" aria-label="Calendar view">
+      <div className="mb-4 flex gap-6 hairline-b" role="tablist" aria-label="Calendar view">
         {(["month", "agenda", "day"] as const).map((v) => (
-          <MechanicalButton key={v} size="sm" active={view === v} onClick={() => setView(v)}>
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            onClick={() => setView(v)}
+            className="text-tab"
+          >
             {v}
-          </MechanicalButton>
+          </button>
         ))}
       </div>
 
       {view === "month" && (
         <>
           <div className="mb-3 flex items-center justify-between">
-            <button type="button" aria-label="Previous month" className="control flex h-11 w-11 items-center justify-center" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
+            <button type="button" aria-label="Previous month" className="flex h-11 w-11 items-center justify-center text-ink" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
               <ChevronLeft size={18} aria-hidden />
             </button>
             <h2 className="text-base font-bold">{monthLabel}</h2>
-            <button type="button" aria-label="Next month" className="control flex h-11 w-11 items-center justify-center" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>
+            <button type="button" aria-label="Next month" className="flex h-11 w-11 items-center justify-center text-ink" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>
               <ChevronRight size={18} aria-hidden />
             </button>
           </div>
@@ -164,7 +183,7 @@ function MonthGrid({
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
   return (
-    <div className="panel p-3">
+    <div>
       <div className="grid grid-cols-7 gap-1 pb-2">
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
           <span key={i} className="type-label text-center text-[10px]">
@@ -182,12 +201,12 @@ function MonthGrid({
               type="button"
               onClick={() => onSelect(day)}
               aria-label={formatDateLong(day)}
-              className={`flex aspect-square flex-col items-center justify-center rounded-[10px] border text-sm tnum transition-colors ${
+              className={`flex aspect-square flex-col items-center justify-center rounded-full text-sm tnum transition-colors ${
                 isSame(day, today)
-                  ? "border-line-strong bg-accent font-bold text-accent-ink"
+                  ? "bg-accent font-bold text-accent-ink"
                   : isSame(day, selected)
-                    ? "border-line-strong bg-panel-2"
-                    : "border-transparent"
+                    ? "font-bold underline underline-offset-4"
+                    : ""
               }`}
             >
               {day.getDate()}
@@ -214,8 +233,8 @@ function EventCard({ event, onEdit }: { event: CalendarEvent; onEdit: (e: Calend
   const timeFormat = usePrefs((s) => s.prefs.timeFormat);
   const cat = CATEGORIES.find((c) => c.id === event.category);
   return (
-    <button type="button" onClick={() => onEdit(event)} className="panel flex w-full items-stretch gap-3 px-4 py-3 text-left">
-      <span aria-hidden className="w-1 shrink-0 rounded-full" style={{ background: cat?.color }} />
+    <button type="button" onClick={() => onEdit(event)} className="flex w-full items-center gap-3 py-3 text-left hairline-b last:border-b-0">
+      <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ background: cat?.color }} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold">{event.title}</span>
         <span className="type-meta mt-0.5 block">
@@ -272,11 +291,11 @@ function DayView({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <button type="button" aria-label="Previous day" className="control flex h-11 w-11 items-center justify-center" onClick={onPrev}>
+        <button type="button" aria-label="Previous day" className="flex h-11 w-11 items-center justify-center text-ink" onClick={onPrev}>
           <ChevronLeft size={18} aria-hidden />
         </button>
         <h2 className="text-sm font-bold">{formatDateLong(day)}</h2>
-        <button type="button" aria-label="Next day" className="control flex h-11 w-11 items-center justify-center" onClick={onNext}>
+        <button type="button" aria-label="Next day" className="flex h-11 w-11 items-center justify-center text-ink" onClick={onNext}>
           <ChevronRight size={18} aria-hidden />
         </button>
       </div>
@@ -335,12 +354,17 @@ function EventEditor({
     onClose();
   };
 
-  const inputCls =
-    "min-h-[44px] rounded-[12px] border border-line bg-surface px-3 text-sm outline-none";
+  const inputCls = "flat-input px-0 text-sm";
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-surface/60 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={event ? "Edit event" : "New event"}>
-      <section className="panel mx-auto flex max-w-md flex-col gap-3 p-5">
+    <div
+      className="fixed inset-0 z-40 overflow-y-auto bg-surface"
+      style={{ paddingTop: "calc(var(--sat) + 16px)", paddingBottom: "calc(var(--sab) + 24px)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={event ? "Edit event" : "New event"}
+    >
+      <section className="mx-auto flex max-w-md flex-col gap-4 px-6 py-4">
         <p className="type-label">{event ? "Edit event" : "New event"}</p>
         <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" aria-label="Event title" className={inputCls} />
         <label className="flex items-center justify-between py-1">
@@ -371,9 +395,17 @@ function EventEditor({
         </div>
         <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location (optional)" aria-label="Location" className={inputCls} />
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" aria-label="Notes" rows={2} className={`${inputCls} resize-none py-2`} />
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Category">
+        <div className="flex flex-wrap gap-4" role="group" aria-label="Category">
           {CATEGORIES.map((c) => (
-            <button key={c.id} type="button" aria-pressed={category === c.id} onClick={() => setCategory(c.id)} className={`control flex min-h-[36px] items-center gap-1.5 px-2.5 text-xs ${category === c.id ? "bg-panel-2" : ""}`}>
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={category === c.id}
+              onClick={() => setCategory(c.id)}
+              className={`flex min-h-[44px] items-center gap-1.5 text-xs font-bold uppercase tracking-wide ${
+                category === c.id ? "text-ink underline underline-offset-4" : "text-ink-muted"
+              }`}
+            >
               <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: c.color }} />
               {c.label}
             </button>
