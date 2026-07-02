@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { usePrefs } from "@/lib/stores/prefs";
 import { MechanicalButton, ToggleSwitch } from "@/components/controls";
 import { exportAllData, importAllData, deleteAllData, type ExportBundle } from "@/lib/db";
@@ -19,13 +21,22 @@ const ACCENTS: Array<{ id: AccentId; label: string; hex: string }> = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const prefs = usePrefs((s) => s.prefs);
   const update = usePrefs((s) => s.update);
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6 px-4 pb-8">
-      <header className="pb-1 pt-3">
-        <h1 className="type-title text-3xl">Settings</h1>
+    <div className="mx-auto flex max-w-md flex-col gap-6 px-6 pb-8">
+      <header className="pb-1 pt-1">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          aria-label="Back to instruments"
+          className="-ml-2 flex h-11 w-11 items-center justify-center text-ink"
+        >
+          <ArrowLeft size={20} strokeWidth={2.2} aria-hidden />
+        </button>
+        <h1 className="type-title pt-1 text-[32px]">Settings</h1>
       </header>
 
       <Section title="Appearance">
@@ -119,9 +130,9 @@ export default function SettingsPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-4 border-t border-line pt-4">
       <h2 className="type-label">{title}</h2>
-      <div className="panel flex flex-col gap-4 p-4">{children}</div>
+      {children}
     </section>
   );
 }

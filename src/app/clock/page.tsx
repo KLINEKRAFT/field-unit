@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
-import { MechanicalButton, MeasurementRow, ToggleSwitch } from "@/components/controls";
+import { MechanicalButton, ToggleSwitch } from "@/components/controls";
+import { DotMatrixDisplay } from "@/components/DotMatrixDisplay";
 import { useNow } from "@/lib/hooks/useNow";
 import { usePrefs } from "@/lib/stores/prefs";
 import { useTimer } from "@/lib/stores/timer";
@@ -23,12 +24,19 @@ export default function ClockPage() {
       mode={mode.toUpperCase()}
       lightOn={mode !== "clock" || timerStatus === "running"}
     >
-      <div className="mx-auto flex max-w-md flex-col gap-5">
-        <div className="grid grid-cols-3 gap-2" role="tablist" aria-label="Clock mode">
+      <div className="mx-auto flex max-w-md flex-col gap-6">
+        <div className="flex gap-6 hairline-b" role="tablist" aria-label="Clock mode">
           {(["clock", "timer", "stopwatch"] as const).map((m) => (
-            <MechanicalButton key={m} size="sm" active={mode === m} onClick={() => setMode(m)}>
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              className="text-tab"
+            >
               {m}
-            </MechanicalButton>
+            </button>
           ))}
         </div>
         {mode === "clock" && <ClockMode />}
@@ -45,41 +53,44 @@ function ClockMode() {
   const now = useNow(500);
   const prefs = usePrefs((s) => s.prefs);
   const update = usePrefs((s) => s.update);
-  const [showAnalog, setShowAnalog] = useState(false);
   const [adding, setAdding] = useState(false);
   const [zoneQuery, setZoneQuery] = useState("");
 
-  const clock = formatClock(now, prefs.timeFormat, prefs.showSeconds);
+  const clock = formatClock(now, prefs.timeFormat, false);
+  const seconds = pad2(now.getSeconds());
   const allZones = useMemo(
     () => (typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : []),
     [],
   );
-  const matches = zoneQuery.length >= 2
-    ? allZones.filter((z) => z.toLowerCase().includes(zoneQuery.toLowerCase())).slice(0, 6)
-    : [];
+  const matches =
+    zoneQuery.length >= 2
+      ? allZones.filter((z) => z.toLowerCase().includes(zoneQuery.toLowerCase())).slice(0, 6)
+      : [];
 
   return (
     <>
-      <section className="panel flex flex-col items-center gap-3 px-4 py-8">
-        {showAnalog ? (
-          <AnalogClock date={now} />
-        ) : (
-          <p className="type-measure segments text-[64px]" aria-live="off">
-            {clock.time}
-            {clock.suffix ? (
-              <span className="ml-2 text-2xl text-ink-muted">{clock.suffix}</span>
-            ) : null}
-          </p>
-        )}
-        <p className="type-meta">{formatDateLong(now)}</p>
+      {/* The clock IS the dot matrix */}
+      <section className="flex flex-col items-center gap-4 py-8">
+        <div className="w-full max-w-[330px] text-ink">
+          <DotMatrixDisplay
+            text={clock.time}
+            dotSize={8}
+            gap={3.5}
+            showGrid
+            fluid
+            label={`Current time ${clock.time}${clock.suffix}`}
+          />
+        </div>
+        <p className="type-meta">
+          {clock.suffix ? `${clock.suffix} · ` : ""}
+          {prefs.showSeconds ? `${seconds} SEC · ` : ""}
+          {formatDateLong(now)}
+        </p>
       </section>
 
-      <section className="panel-inset px-4 py-1">
-        <div className="flex items-center justify-between py-2.5 hairline-b">
-          <span className="type-label">Analog dial</span>
-          <ToggleSwitch checked={showAnalog} onChange={setShowAnalog} label="Analog dial" />
-        </div>
-        <div className="flex items-center justify-between py-2.5 hairline-b">
+      {/* Flat settings rows */}
+      <section>
+        <div className="flex items-center justify-between py-3 hairline-b">
           <span className="type-label">Seconds</span>
           <ToggleSwitch
             checked={prefs.showSeconds}
@@ -87,7 +98,7 @@ function ClockMode() {
             label="Show seconds"
           />
         </div>
-        <div className="flex items-center justify-between py-2.5">
+        <div className="flex items-center justify-between py-3 hairline-b">
           <span className="type-label">24-hour</span>
           <ToggleSwitch
             checked={prefs.timeFormat === "24h"}
@@ -97,33 +108,35 @@ function ClockMode() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+      {/* World clocks — flat rows */}
+      <section>
+        <div className="flex items-center justify-between py-2">
           <h2 className="type-label">World clocks</h2>
-          <MechanicalButton
-            size="sm"
-            variant="ghost"
+          <button
+            type="button"
+            aria-label="Add world clock"
             onClick={() => setAdding(!adding)}
-            ariaLabel="Add world clock"
+            className="-mr-2 flex h-11 w-11 items-center justify-center text-ink"
           >
-            <Plus size={16} aria-hidden /> Add
-          </MechanicalButton>
+            <Plus size={18} aria-hidden />
+          </button>
         </div>
         {adding && (
-          <div className="panel-inset flex flex-col gap-2 p-3">
+          <div className="flex flex-col gap-1 pb-3">
             <input
               type="text"
               value={zoneQuery}
               onChange={(e) => setZoneQuery(e.target.value)}
               placeholder="Search time zone (e.g. Tokyo)"
-              className="min-h-[44px] rounded-[12px] border border-line bg-surface px-3 text-sm outline-none"
               aria-label="Search time zone"
+              className="flat-input text-sm"
+              autoFocus
             />
             {matches.map((z) => (
               <button
                 key={z}
                 type="button"
-                className="control min-h-[44px] px-3 text-left text-sm"
+                className="min-h-[44px] text-left text-sm hairline-b"
                 onClick={() => {
                   update({
                     worldClocks: [
@@ -141,15 +154,15 @@ function ClockMode() {
           </div>
         )}
         {prefs.worldClocks.length === 0 && !adding ? (
-          <p className="text-sm text-ink-muted">No saved world clocks.</p>
+          <p className="py-1 text-sm text-ink-muted">None saved.</p>
         ) : (
           prefs.worldClocks.map((wc) => {
             const t = formatClock(now, prefs.timeFormat, false, wc.timeZone);
             return (
-              <div key={wc.id} className="panel-inset flex items-center justify-between px-4 py-3">
-                <span className="text-sm font-semibold">{wc.label}</span>
-                <span className="flex items-center gap-3">
-                  <span className="type-measure segments text-xl">
+              <div key={wc.id} className="flex items-center justify-between py-2 hairline-b last:border-b-0">
+                <span className="text-sm font-bold">{wc.label}</span>
+                <span className="flex items-center gap-2">
+                  <span className="type-measure segments text-lg">
                     {t.time}
                     {t.suffix ? <span className="ml-1 text-xs text-ink-muted">{t.suffix}</span> : null}
                   </span>
@@ -161,7 +174,7 @@ function ClockMode() {
                       update({ worldClocks: prefs.worldClocks.filter((w) => w.id !== wc.id) })
                     }
                   >
-                    <X size={16} aria-hidden />
+                    <X size={15} aria-hidden />
                   </button>
                 </span>
               </div>
@@ -170,57 +183,6 @@ function ClockMode() {
         )}
       </section>
     </>
-  );
-}
-
-function AnalogClock({ date }: { date: Date }) {
-  const size = 220;
-  const c = size / 2;
-  const h = date.getHours() % 12;
-  const m = date.getMinutes();
-  const s = date.getSeconds();
-  const hourAngle = (h + m / 60) * 30;
-  const minAngle = (m + s / 60) * 6;
-  const secAngle = s * 6;
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      role="img"
-      aria-label={`Analog clock showing ${pad2(date.getHours())}:${pad2(m)}`}
-    >
-      <circle cx={c} cy={c} r={c - 2} fill="var(--surface)" stroke="var(--line-strong)" />
-      {Array.from({ length: 60 }, (_, i) => {
-        const a = (i * Math.PI * 2) / 60 - Math.PI / 2;
-        const major = i % 5 === 0;
-        const r1 = c - (major ? 16 : 10);
-        const r2 = c - 6;
-        return (
-          <line
-            key={i}
-            x1={c + Math.cos(a) * r1}
-            y1={c + Math.sin(a) * r1}
-            x2={c + Math.cos(a) * r2}
-            y2={c + Math.sin(a) * r2}
-            stroke="var(--ink)"
-            strokeWidth={major ? 2 : 1}
-            opacity={major ? 0.9 : 0.35}
-          />
-        );
-      })}
-      <g transform={`rotate(${hourAngle} ${c} ${c})`}>
-        <rect x={c - 3} y={c - 52} width={6} height={58} rx={3} fill="var(--ink)" />
-      </g>
-      <g transform={`rotate(${minAngle} ${c} ${c})`}>
-        <rect x={c - 2} y={c - 78} width={4} height={86} rx={2} fill="var(--ink)" />
-      </g>
-      <g transform={`rotate(${secAngle} ${c} ${c})`}>
-        <rect x={c - 1} y={c - 86} width={2} height={100} rx={1} fill="var(--accent)" />
-      </g>
-      <circle cx={c} cy={c} r={5} fill="var(--ink)" />
-      <circle cx={c} cy={c} r={2} fill="var(--accent)" />
-    </svg>
   );
 }
 
@@ -247,7 +209,6 @@ function TimerMode() {
       ? Math.max(0, timer.endAt - now.getTime())
       : timer.remainingMs;
 
-  // fire completion exactly once when the deadline passes
   useEffect(() => {
     if (timer.status === "running" && timer.endAt !== null && timer.endAt <= Date.now()) {
       timer.complete();
@@ -256,18 +217,35 @@ function TimerMode() {
 
   const progress = timer.totalMs > 0 ? 1 - remaining / timer.totalMs : 0;
   const configuredMs = (h * 3600 + m * 60 + s) * 1000;
+  const displayMs = timer.status === "idle" ? configuredMs : remaining;
 
   return (
     <>
-      <section className="panel flex flex-col items-center gap-5 px-4 py-8">
-        <TimerRing progress={timer.status === "idle" ? 0 : progress} done={timer.status === "done"}>
-          <p className="type-measure segments text-4xl" role="timer" aria-live="off">
-            {timer.status === "idle" ? formatDuration(configuredMs) : formatDuration(remaining)}
-          </p>
-        </TimerRing>
+      <section className="flex flex-col items-center gap-6 py-6">
+        <div className="w-full max-w-[330px] text-ink" role="timer">
+          <DotMatrixDisplay
+            text={formatDuration(displayMs)}
+            dotSize={8}
+            gap={3.5}
+            showGrid
+            fluid
+            label={`Timer ${formatDuration(displayMs)}`}
+          />
+        </div>
+
+        {/* thin linear progress — flat, no ring */}
+        <div className="h-[3px] w-full max-w-[330px] overflow-hidden rounded-full" style={{ background: "var(--line)" }} aria-hidden>
+          <div
+            className="h-full rounded-full transition-[width] duration-300 ease-linear"
+            style={{
+              width: `${timer.status === "idle" ? 0 : progress * 100}%`,
+              background: timer.status === "done" ? "var(--alert)" : "var(--accent)",
+            }}
+          />
+        </div>
 
         {timer.status === "idle" && (
-          <div className="flex items-center gap-2" aria-label="Set timer duration">
+          <div className="flex items-center gap-3" aria-label="Set timer duration">
             <DurationField label="Hours" value={h} max={23} onChange={setH} />
             <span className="type-measure text-2xl text-ink-muted">:</span>
             <DurationField label="Minutes" value={m} max={59} onChange={setM} />
@@ -311,11 +289,16 @@ function TimerMode() {
       </section>
 
       {timer.status === "idle" && (
-        <section className="grid grid-cols-3 gap-2">
+        <section className="flex flex-wrap justify-center gap-x-7 gap-y-1">
           {TIMER_PRESETS.map((p) => (
-            <MechanicalButton key={p.label} size="sm" onClick={() => timer.start(p.ms)}>
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => timer.start(p.ms)}
+              className="min-h-[44px] text-sm font-bold uppercase tracking-[0.08em] text-ink-muted"
+            >
               {p.label}
-            </MechanicalButton>
+            </button>
           ))}
         </section>
       )}
@@ -343,46 +326,11 @@ function DurationField({
         max={max}
         value={pad2(value)}
         onChange={(e) => onChange(Math.min(max, Math.max(0, Number(e.target.value) || 0)))}
-        className="segments h-14 w-16 rounded-[12px] border border-line bg-surface text-center text-2xl outline-none"
+        className="flat-input segments h-14 w-16 text-center text-2xl"
         aria-label={label}
       />
       <span className="type-label text-[9px]">{label}</span>
     </label>
-  );
-}
-
-function TimerRing({
-  progress,
-  done,
-  children,
-}: {
-  progress: number;
-  done: boolean;
-  children: React.ReactNode;
-}) {
-  const size = 220;
-  const r = 100;
-  const circ = 2 * Math.PI * r;
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--line)" strokeWidth={6} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={done ? "var(--alert)" : "var(--accent)"}
-          strokeWidth={6}
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - progress)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          style={{ transition: "stroke-dashoffset 250ms linear" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
-    </div>
   );
 }
 
@@ -392,10 +340,9 @@ function StopwatchMode() {
   const sw = useStopwatch();
   const [, force] = useState(0);
 
-  // 30fps re-render only while running
   useEffect(() => {
     if (!sw.running) return;
-    const id = setInterval(() => force((n) => n + 1), 33);
+    const id = setInterval(() => force((n) => n + 1), 50);
     return () => clearInterval(id);
   }, [sw.running]);
 
@@ -403,10 +350,17 @@ function StopwatchMode() {
 
   return (
     <>
-      <section className="panel flex flex-col items-center gap-6 px-4 py-10">
-        <p className="type-measure segments text-6xl" role="timer" aria-live="off">
-          {formatDuration(elapsed, true)}
-        </p>
+      <section className="flex flex-col items-center gap-8 py-8">
+        <div className="w-full max-w-[350px] text-ink" role="timer">
+          <DotMatrixDisplay
+            text={formatDuration(elapsed, true)}
+            dotSize={7}
+            gap={3}
+            showGrid
+            fluid
+            label={`Stopwatch ${formatDuration(elapsed, true)}`}
+          />
+        </div>
         <div className="flex w-full max-w-xs gap-2">
           {!sw.running && elapsed === 0 && (
             <MechanicalButton variant="primary" size="lg" className="flex-1" onClick={sw.start}>
@@ -437,16 +391,17 @@ function StopwatchMode() {
       </section>
 
       {sw.laps.length > 0 && (
-        <section className="panel-inset px-4 py-1">
+        <section>
           {sw.laps.map((lapTime, i) => {
             const prev = sw.laps[i + 1] ?? 0;
             return (
-              <MeasurementRow
-                key={`${lapTime}-${i}`}
-                label={`Lap ${sw.laps.length - i}`}
-                value={formatDuration(lapTime - prev, true)}
-                sub={formatDuration(lapTime, true)}
-              />
+              <div key={`${lapTime}-${i}`} className="flex items-baseline justify-between py-2.5 hairline-b last:border-b-0">
+                <span className="type-label">Lap {sw.laps.length - i}</span>
+                <span className="type-measure text-base">
+                  {formatDuration(lapTime - prev, true)}
+                  <span className="ml-2 text-xs text-ink-muted">{formatDuration(lapTime, true)}</span>
+                </span>
+              </div>
             );
           })}
         </section>

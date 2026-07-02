@@ -34,6 +34,18 @@ export const usePrefs = create<PrefsStore>((set, get) => ({
   hydrate: async () => {
     const stored = await prefsRepo.get();
     const prefs = { ...DEFAULT_PREFERENCES, ...stored };
+    // One-time migration to US units (the owner's spec); users can still
+    // switch back in Settings afterwards.
+    try {
+      if (stored && !localStorage.getItem("fu-units-v2")) {
+        prefs.tempUnit = "fahrenheit";
+        prefs.windUnit = "mph";
+        localStorage.setItem("fu-units-v2", "1");
+        void prefsRepo.set(prefs);
+      }
+    } catch {
+      /* private mode */
+    }
     set({ prefs, hydrated: true });
     applyThemeToDocument(prefs);
   },

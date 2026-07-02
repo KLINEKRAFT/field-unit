@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
-import { MechanicalButton, MeasurementRow } from "@/components/controls";
+import { MechanicalButton } from "@/components/controls";
 import { PermissionCard } from "@/components/states";
 import { useCompass } from "@/lib/hooks/useCompass";
 import { cardinalFromDegrees } from "@/lib/format";
@@ -21,7 +21,7 @@ export default function CompassPage() {
       lightOn={live}
       lightColor={compass.status === "demo" ? "sage" : "accent"}
     >
-      <div className="mx-auto flex max-w-md flex-col gap-5">
+      <div className="mx-auto flex max-w-md flex-col gap-6">
         {compass.status === "idle" && (
           <PermissionCard
             title="Motion access"
@@ -35,7 +35,7 @@ export default function CompassPage() {
         {compass.status === "denied" && (
           <PermissionCard
             title="Permission denied"
-            explanation="Motion access was declined. You can re-enable it in iOS Settings → Safari → Motion & Orientation Access, or run the clearly-labelled demo dial."
+            explanation="Motion access was declined. Re-enable it in iOS Settings → Safari → Motion & Orientation Access, or run the clearly-labelled demo dial."
             actionLabel="Try again"
             onAction={() => void compass.requestStart()}
             secondary={{ label: "Run demo instead", onClick: compass.startDemo }}
@@ -55,7 +55,7 @@ export default function CompassPage() {
           <>
             {compass.status === "demo" && (
               <p
-                className="panel-inset px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em]"
+                className="text-center text-xs font-bold uppercase tracking-[0.14em]"
                 style={{ color: "var(--alert)" }}
                 role="status"
               >
@@ -63,40 +63,36 @@ export default function CompassPage() {
               </p>
             )}
 
-            <section className="panel flex flex-col items-center gap-6 px-4 py-8">
+            <div className="flex justify-center py-4">
               <CompassDial heading={heading} locked={locked} />
-              <div className="text-center">
-                <p className="type-measure segments text-6xl" aria-live="off">
-                  {Math.round(heading)}°
-                </p>
-                <p className="type-label mt-2 text-base">{cardinalFromDegrees(heading)}</p>
-              </div>
-              <div className="flex w-full max-w-xs gap-2">
-                <MechanicalButton
-                  className="flex-1"
-                  active={locked !== null}
-                  onClick={() => setLocked(locked === null ? Math.round(heading) : null)}
-                >
-                  {locked === null ? "Lock bearing" : `Locked ${locked}°`}
-                </MechanicalButton>
-              </div>
-            </section>
+            </div>
 
-            <section className="panel-inset px-4 py-1">
-              <MeasurementRow label="Heading" value={`${Math.round(heading)}°`} />
-              <MeasurementRow label="Cardinal" value={cardinalFromDegrees(heading)} />
+            <div className="text-center">
+              <p className="type-display text-7xl" aria-live="off">
+                {Math.round(heading)}°
+              </p>
+              <p className="type-label mt-3 text-sm">{cardinalFromDegrees(heading)}</p>
               {locked !== null && (
-                <MeasurementRow
-                  label="To bearing"
-                  value={`${Math.round((((locked - heading) % 360) + 540) % 360 - 180)}°`}
-                />
+                <p className="type-meta mt-2">
+                  To bearing {locked}°:{" "}
+                  {Math.round(((((locked - heading) % 360) + 540) % 360) - 180)}°
+                </p>
               )}
-            </section>
+            </div>
+
+            <div className="mx-auto w-full max-w-xs">
+              <MechanicalButton
+                className="w-full"
+                active={locked !== null}
+                onClick={() => setLocked(locked === null ? Math.round(heading) : null)}
+              >
+                {locked === null ? "Lock bearing" : `Locked ${locked}° — release`}
+              </MechanicalButton>
+            </div>
 
             {compass.needsCalibration && (
-              <p className="panel-inset px-4 py-3 text-sm text-ink-muted" role="status">
-                Accuracy is low. Calibrate by moving your phone in a figure-eight pattern, away
-                from magnets and metal.
+              <p className="text-center text-sm text-ink-muted" role="status">
+                Accuracy is low — move your phone in a figure-eight, away from magnets and metal.
               </p>
             )}
           </>
@@ -106,25 +102,17 @@ export default function CompassPage() {
   );
 }
 
+/**
+ * The user's compass widget, live: fine muted tick ring, upright cardinal
+ * letters (N in ink, others muted), two-tone kite needle with a hollow hub.
+ * The whole card rotates against the fixed phone frame.
+ */
 function CompassDial({ heading, locked }: { heading: number; locked: number | null }) {
-  const size = 280;
+  const size = 300;
   const c = size / 2;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {/* fixed lubber line */}
-      <div
-        aria-hidden
-        className="absolute left-1/2 top-0 z-10 -translate-x-1/2"
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: "8px solid transparent",
-          borderRight: "8px solid transparent",
-          borderTop: "14px solid var(--accent)",
-        }}
-      />
-      {/* rotating card — dampened by the smoothing in useCompass */}
       <svg
         width={size}
         height={size}
@@ -132,13 +120,13 @@ function CompassDial({ heading, locked }: { heading: number; locked: number | nu
         aria-hidden
         style={{ transform: `rotate(${-heading}deg)` }}
       >
-        <circle cx={c} cy={c} r={c - 4} fill="var(--surface)" stroke="var(--line-strong)" />
-        {Array.from({ length: 72 }, (_, i) => {
-          const deg = i * 5;
+        {/* fine tick ring */}
+        {Array.from({ length: 120 }, (_, i) => {
+          const deg = i * 3;
           const a = ((deg - 90) * Math.PI) / 180;
           const major = deg % 30 === 0;
-          const r1 = c - (major ? 22 : 14);
-          const r2 = c - 8;
+          const r1 = c - (major ? 14 : 9);
+          const r2 = c - 2;
           return (
             <line
               key={i}
@@ -147,59 +135,54 @@ function CompassDial({ heading, locked }: { heading: number; locked: number | nu
               x2={c + Math.cos(a) * r2}
               y2={c + Math.sin(a) * r2}
               stroke="var(--ink)"
-              strokeWidth={major ? 2 : 1}
-              opacity={major ? 0.9 : 0.35}
+              strokeWidth={major ? 1.4 : 0.8}
+              opacity={major ? 0.5 : 0.22}
             />
           );
         })}
+
+        {/* cardinal letters */}
         {(["N", "E", "S", "W"] as const).map((letter, i) => {
           const a = ((i * 90 - 90) * Math.PI) / 180;
           const r = c - 44;
+          const x = c + Math.cos(a) * r;
+          const y = c + Math.sin(a) * r;
           return (
             <text
               key={letter}
-              x={c + Math.cos(a) * r}
-              y={c + Math.sin(a) * r}
+              x={x}
+              y={y}
               textAnchor="middle"
               dominantBaseline="central"
-              transform={`rotate(${i * 90} ${c + Math.cos(a) * r} ${c + Math.sin(a) * r})`}
+              transform={`rotate(${heading} ${x} ${y})`}
               fontSize={22}
               fontWeight={700}
-              fill={letter === "N" ? "var(--alert)" : "var(--ink)"}
+              fill={letter === "N" ? "var(--ink)" : "var(--ink-muted)"}
               fontFamily="var(--font-sans)"
             >
               {letter}
             </text>
           );
         })}
-        {[30, 60, 120, 150, 210, 240, 300, 330].map((deg) => {
-          const a = ((deg - 90) * Math.PI) / 180;
-          const r = c - 44;
-          return (
-            <text
-              key={deg}
-              x={c + Math.cos(a) * r}
-              y={c + Math.sin(a) * r}
-              textAnchor="middle"
-              dominantBaseline="central"
-              transform={`rotate(${deg} ${c + Math.cos(a) * r} ${c + Math.sin(a) * r})`}
-              fontSize={11}
-              fill="var(--ink-muted)"
-              fontFamily="var(--font-mono)"
-            >
-              {deg}
-            </text>
-          );
-        })}
-        {/* north pointer on the card */}
-        <polygon points={`${c},26 ${c + 7},52 ${c},44 ${c - 7},52`} fill="var(--alert)" />
-        {/* locked-bearing marker */}
+
+        {/* two-tone needle: ink half points north, muted half south */}
+        <polygon
+          points={`${c},${c - 82} ${c + 11},${c} ${c - 11},${c}`}
+          fill="var(--ink)"
+        />
+        <polygon
+          points={`${c},${c + 82} ${c + 11},${c} ${c - 11},${c}`}
+          fill="var(--ink-faint)"
+        />
+        <circle cx={c} cy={c} r={10} fill="var(--ink)" />
+        <circle cx={c} cy={c} r={4.5} fill="var(--surface)" />
+
+        {/* locked-bearing marker on the ring */}
         {locked !== null && (
           <g transform={`rotate(${locked} ${c} ${c})`}>
-            <circle cx={c} cy={16} r={5} fill="var(--accent)" stroke="var(--ink)" />
+            <circle cx={c} cy={12} r={5} fill="var(--accent)" stroke="var(--ink)" strokeWidth={1.5} />
           </g>
         )}
-        <circle cx={c} cy={c} r={4} fill="var(--ink)" />
       </svg>
     </div>
   );

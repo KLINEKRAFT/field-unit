@@ -19,7 +19,12 @@ interface RadioStore {
   status: StreamStatus;
   volume: number;
   muted: boolean;
-  /** track title when the platform surfaces it (rare for plain streams) */
+  /**
+   * Live analyser for the dot-matrix waveform. Only available when the
+   * stream's server allows CORS audio analysis; otherwise playback continues
+   * without visualization (never faked).
+   */
+  analyser: AnalyserNode | null;
   nowPlaying: string | null;
   hydrate: () => Promise<void>;
   addStation: (name: string, streamUrl: string) => void;
@@ -33,29 +38,110 @@ interface RadioStore {
   setMuted: (m: boolean) => void;
 }
 
-/* ------------------------- singleton audio element ---------------------- */
+/* --------------------------- audio infrastructure ------------------------ */
+/*
+ * Two elements: a CORS-enabled one wired into WebAudio (analyser), and a
+ * plain fallback for streams that reject CORS — a MediaElementSource on
+ * non-CORS media would output silence, so those get a clean element instead.
+ */
 
-let audio: HTMLAudioElement | null = null;
+let wiredEl: HTMLAudioElement | null = null;
+let plainEl: HTMLAudioElement | null = null;
+let currentEl: HTMLAudioElement | null = null;
+let audioCtx: AudioContext | null = null;
+let analyserNode: AnalyserNode | null = null;
+const noCorsUrls = new Set<string>();
 
-function getAudio(store: () => RadioStore): HTMLAudioElement {
-  if (!audio) {
-    audio = new Audio();
-    audio.preload = "none";
-    audio.addEventListener("playing", () => {
-      useRadio.setState({ status: "playing" });
-      updateMediaSession(store());
-    });
-    audio.addEventListener("waiting", () => useRadio.setState({ status: "connecting" }));
-    audio.addEventListener("error", () => useRadio.setState({ status: "error" }));
-    audio.addEventListener("pause", () => {
-      if (useRadio.getState().status !== "error") useRadio.setState({ status: "idle" });
-    });
-  }
-  return audio;
+function attachListeners(el: HTMLAudioElement, isWired: boolean): void {
+  el.addEventListener("playing", () => {
+    useRadio.setState({ status: "playing", analyser: isWired ? analyserNode : null });
+    updateMediaSession();
+  });
+  el.addEventListener("waiting", () => useRadio.setState({ status: "connecting" }));
+  el.addEventListener("pause", () => {
+    if (useRadio.getState().status !== "error") useRadio.setState({ status: "idle" });
+  });
+  el.addEventListener("error", () => {
+    const state = useRadio.getState();
+    const station = state.stations.find((s) => s.id === state.activeId);
+    if (isWired && station && !noCorsUrls.has(station.streamUrl)) {
+      // Stream refused the CORS load — retry once on the plain element.
+      noCorsUrls.add(station.streamUrl);
+      startPlayback(station, false);
+    } else {
+      useRadio.setState({ status: "error", analyser: null });
+    }
+  });
 }
 
-function updateMediaSession(state: RadioStore): void {
+function getWiredEl(): HTMLAudioElement {
+  if (!wiredEl) {
+    wiredEl = new Audio();
+    wiredEl.preload = "none";
+    wiredEl.crossOrigin = "anonymous";
+    attachListeners(wiredEl, true);
+  }
+  return wiredEl;
+}
+
+function getPlainEl(): HTMLAudioElement {
+  if (!plainEl) {
+    plainEl = new Audio();
+    plainEl.preload = "none";
+    attachListeners(plainEl, false);
+  }
+  return plainEl;
+}
+
+/** Must be called from a user gesture (play tap) for iOS AudioContext rules. */
+function ensureWebAudio(el: HTMLAudioElement): void {
+  if (audioCtx) {
+    void audioCtx.resume();
+    return;
+  }
+  try {
+    const AC = window.AudioContext ?? window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+    const source = audioCtx.createMediaElementSource(el);
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 1024;
+    source.connect(analyserNode);
+    analyserNode.connect(audioCtx.destination);
+  } catch {
+    audioCtx = null;
+    analyserNode = null;
+  }
+}
+
+function startPlayback(station: RadioStation, tryCors: boolean): void {
+  const { volume, muted } = useRadio.getState();
+  // stop whichever element was active
+  currentEl?.pause();
+  const el = tryCors ? getWiredEl() : getPlainEl();
+  currentEl = el;
+  if (tryCors) ensureWebAudio(el);
+  el.src = station.streamUrl;
+  el.volume = muted ? 0 : volume;
+  useRadio.setState({
+    activeId: station.id,
+    status: "connecting",
+    nowPlaying: null,
+    analyser: null,
+  });
+  el.play().catch(() => {
+    if (tryCors && !noCorsUrls.has(station.streamUrl)) {
+      noCorsUrls.add(station.streamUrl);
+      startPlayback(station, false);
+    } else {
+      useRadio.setState({ status: "error", analyser: null });
+    }
+  });
+}
+
+function updateMediaSession(): void {
   if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+  const state = useRadio.getState();
   const station = state.stations.find((s) => s.id === state.activeId);
   navigator.mediaSession.metadata = new MediaMetadata({
     title: station?.name ?? "Field Unit Radio",
@@ -68,6 +154,12 @@ function updateMediaSession(state: RadioStore): void {
   navigator.mediaSession.setActionHandler("nexttrack", () => useRadio.getState().next());
 }
 
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 /* --------------------------------- store -------------------------------- */
 
 export const useRadio = create<RadioStore>((set, get) => ({
@@ -77,6 +169,7 @@ export const useRadio = create<RadioStore>((set, get) => ({
   status: "idle",
   volume: 0.8,
   muted: false,
+  analyser: null,
   nowPlaying: null,
 
   hydrate: async () => {
@@ -109,16 +202,12 @@ export const useRadio = create<RadioStore>((set, get) => ({
   play: (id) => {
     const station = get().stations.find((s) => s.id === id);
     if (!station) return;
-    const el = getAudio(get);
-    el.src = station.streamUrl;
-    el.volume = get().muted ? 0 : get().volume;
-    set({ activeId: id, status: "connecting", nowPlaying: null });
-    el.play().catch(() => set({ status: "error" }));
+    startPlayback(station, !noCorsUrls.has(station.streamUrl));
   },
 
   pause: () => {
-    getAudio(get).pause();
-    set({ status: "idle" });
+    currentEl?.pause();
+    set({ status: "idle", analyser: null });
   },
 
   toggle: () => {
@@ -135,25 +224,25 @@ export const useRadio = create<RadioStore>((set, get) => ({
     const { stations, activeId } = get();
     if (stations.length === 0) return;
     const i = stations.findIndex((s) => s.id === activeId);
-    const nextStation = stations[(i + 1) % stations.length];
-    if (nextStation) get().play(nextStation.id);
+    const station = stations[(i + 1) % stations.length];
+    if (station) get().play(station.id);
   },
 
   prev: () => {
     const { stations, activeId } = get();
     if (stations.length === 0) return;
     const i = stations.findIndex((s) => s.id === activeId);
-    const prevStation = stations[(i - 1 + stations.length) % stations.length];
-    if (prevStation) get().play(prevStation.id);
+    const station = stations[(i - 1 + stations.length) % stations.length];
+    if (station) get().play(station.id);
   },
 
   setVolume: (v) => {
     set({ volume: v, muted: false });
-    if (audio) audio.volume = v;
+    if (currentEl) currentEl.volume = v;
   },
 
   setMuted: (m) => {
     set({ muted: m });
-    if (audio) audio.volume = m ? 0 : get().volume;
+    if (currentEl) currentEl.volume = m ? 0 : get().volume;
   },
 }));

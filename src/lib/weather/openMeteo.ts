@@ -64,8 +64,9 @@ export const openMeteoProvider: WeatherProvider = {
         precipitationProbability: json.hourly.precipitation_probability[i] ?? 0,
         weatherCode: json.hourly.weather_code[i] ?? 0,
       }))
-      .filter((h) => h.time >= now - 30 * 60 * 1000)
-      .slice(0, 24);
+      // keep a few past hours so the graph can pin NOW mid-curve
+      .filter((h) => h.time >= now - 4.5 * 3600 * 1000)
+      .slice(0, 28);
 
     return {
       current: {
@@ -75,7 +76,8 @@ export const openMeteoProvider: WeatherProvider = {
         windSpeed: json.current.wind_speed_10m,
         windDirection: json.current.wind_direction_10m,
         // current-hour probability comes from the hourly series
-        precipitationProbability: hourly[0]?.precipitationProbability ?? 0,
+        precipitationProbability:
+          hourly.find((h) => h.time >= now)?.precipitationProbability ?? 0,
         weatherCode: json.current.weather_code,
         isDay: json.current.is_day === 1,
       },
