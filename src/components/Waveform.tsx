@@ -10,13 +10,16 @@ interface WaveformProps {
 }
 
 /**
- * Real waveform on the dot-matrix grid: each column is a time-domain sample,
- * lit symmetrically around the center row — the display language of the
- * user's recorder comp.
+ * Scrolling dot-matrix waveform. Each animation frame samples the current
+ * loudness (RMS of the time-domain frame) and pushes it onto a rolling
+ * history; the whole field scrolls right-to-left like a tape meter, so the
+ * wave visibly flows rather than flickering in place. Amplitude is mirrored
+ * around the center row. Values are the real signal — never synthesized.
  */
 export function Waveform({ analyser, height = 120, className }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const raf = useRef(0);
+  const history = useRef<number[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,33 +35,42 @@ export function Waveform({ analyser, height = 120, className }: WaveformProps) {
     const inkColor = styles.getPropertyValue("--ink").trim() || "#080808";
     const faintColor = styles.getPropertyValue("--ink-faint").trim() || "#b3ada0";
 
-    const data = analyser ? new Uint8Array(analyser.fftSize) : null;
+    const dot = 3.4 * dpr;
+    const gap = 4.2 * dpr;
+    const cell = dot + gap;
+    const cols = Math.max(1, Math.floor(canvas.width / cell));
+    const rows = Math.max(1, Math.floor(canvas.height / cell));
+    const centerRow = Math.floor(rows / 2);
+    const xOffset = (canvas.width - cols * cell) / 2;
+    const yOffset = (canvas.height - rows * cell) / 2;
 
-    const draw = () => {
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
+    // seed / resize the rolling history to the column count
+    if (history.current.length !== cols) history.current = new Array(cols).fill(0);
 
-      const dot = 3.4 * dpr;
-      const gap = 4.2 * dpr;
-      const cell = dot + gap;
-      const cols = Math.floor(w / cell);
-      const rows = Math.floor(h / cell);
-      const centerRow = Math.floor(rows / 2);
-      const xOffset = (w - cols * cell) / 2;
+    const buf = analyser ? new Uint8Array(analyser.fftSize) : null;
 
-      if (analyser && data) analyser.getByteTimeDomainData(data as Uint8Array<ArrayBuffer>);
+    let last = 0;
+    const STEP = 1000 / 45; // advance the scroll ~45 times a second
 
-      for (let c = 0; c < cols; c++) {
-        let amplitude = 0;
-        if (analyser && data) {
-          // average |sample| over this column's slice for a stable shape
-          const slice = Math.floor(data.length / cols);
-          let sum = 0;
-          for (let k = 0; k < slice; k++) sum += Math.abs((data[c * slice + k] ?? 128) - 128);
-          amplitude = Math.min(1, (sum / slice / 128) * 2.2);
+    const draw = (now: number) => {
+      if (analyser && buf && now - last >= STEP) {
+        last = now;
+        analyser.getByteTimeDomainData(buf as Uint8Array<ArrayBuffer>);
+        // RMS loudness of this frame, boosted for visible travel
+        let sumSq = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const v = (buf[i]! - 128) / 128;
+          sumSq += v * v;
         }
-        const reach = Math.round(amplitude * centerRow);
+        const rms = Math.min(1, Math.sqrt(sumSq / buf.length) * 2.6);
+        history.current.push(rms);
+        if (history.current.length > cols) history.current.shift();
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let c = 0; c < cols; c++) {
+        const amp = history.current[c] ?? 0;
+        const reach = Math.round(amp * centerRow);
         for (let r = 0; r < rows; r++) {
           const fromCenter = Math.abs(r - centerRow);
           const lit = fromCenter <= reach || r === centerRow;
@@ -67,7 +79,7 @@ export function Waveform({ analyser, height = 120, className }: WaveformProps) {
           ctx.beginPath();
           ctx.arc(
             xOffset + c * cell + cell / 2,
-            r * cell + cell / 2 + (h - rows * cell) / 2,
+            yOffset + r * cell + cell / 2,
             dot / 2,
             0,
             Math.PI * 2,
@@ -79,7 +91,7 @@ export function Waveform({ analyser, height = 120, className }: WaveformProps) {
       if (analyser) raf.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    raf.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf.current);
   }, [analyser]);
 

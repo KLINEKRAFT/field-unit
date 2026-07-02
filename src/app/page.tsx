@@ -19,8 +19,7 @@ import {
   tempLabel,
 } from "@/lib/format";
 import { conditionFromCode } from "@/lib/weather/provider";
-import { WeatherGlyph } from "@/components/WeatherGlyph";
-import { DotIcon } from "@/components/DotIcon";
+import { RamsIcon } from "@/components/RamsIcon";
 import { TintablePage } from "@/components/TintablePage";
 import { Settings } from "lucide-react";
 
@@ -67,11 +66,7 @@ export default function InstrumentBoard() {
       name: "Weather",
       index: "01",
       color: TOOL_COLORS.orange,
-      icon: condition ? (
-        <WeatherGlyph kind={condition.kind} size={64} label={condition.label} />
-      ) : (
-        <DotIcon name="weather" size={56} />
-      ),
+      icon: <RamsIcon name="weather" size={40} />,
       meta:
         weather && condition
           ? `${tempLabel(weather.data.current.temperature, prefs.tempUnit)} ${condition.label}`
@@ -82,7 +77,7 @@ export default function InstrumentBoard() {
       name: "Compass",
       index: "02",
       color: TOOL_COLORS.olive,
-      icon: <DotIcon name="compass" size={56} />,
+      icon: <RamsIcon name="compass" size={40} />,
       meta: "Tap to engage",
     },
     {
@@ -90,7 +85,7 @@ export default function InstrumentBoard() {
       name: "Radio",
       index: "03",
       color: TOOL_COLORS.flame,
-      icon: <DotIcon name="radio" size={56} />,
+      icon: <RamsIcon name="radio" size={40} />,
       meta:
         radio.status === "playing"
           ? `On air · ${activeStation?.name ?? ""}`
@@ -103,7 +98,7 @@ export default function InstrumentBoard() {
       name: "Recorder",
       index: "04",
       color: TOOL_COLORS.oxide,
-      icon: <DotIcon name="recorder" size={56} />,
+      icon: <RamsIcon name="recorder" size={40} />,
       meta: latestRecording
         ? `${latestRecording.name.slice(0, 16)} · ${formatDuration(latestRecording.duration)}`
         : "No takes yet",
@@ -113,7 +108,7 @@ export default function InstrumentBoard() {
       name: "Notes",
       index: "05",
       color: TOOL_COLORS.ink,
-      icon: <DotIcon name="notes" size={56} />,
+      icon: <RamsIcon name="notes" size={40} />,
       meta: latestNote ? latestNote.title || "Untitled" : "Empty",
     },
     {
@@ -121,7 +116,7 @@ export default function InstrumentBoard() {
       name: "Calendar",
       index: "06",
       color: TOOL_COLORS.olive,
-      icon: <DotIcon name="calendar" size={56} />,
+      icon: <RamsIcon name="calendar" size={40} />,
       meta: nextEvent
         ? `${nextEvent.title.slice(0, 14)} · ${formatDateShort(new Date(nextEvent.start))}`
         : "Nothing scheduled",
@@ -131,7 +126,7 @@ export default function InstrumentBoard() {
       name: "Clock",
       index: "07",
       color: TOOL_COLORS.ink,
-      icon: <DotIcon name="clock" size={56} />,
+      icon: <RamsIcon name="clock" size={40} />,
       meta: `${clock.time}${clock.suffix ? ` ${clock.suffix}` : ""}`,
     },
     {
@@ -139,7 +134,7 @@ export default function InstrumentBoard() {
       name: "Alarm",
       index: "08",
       color: TOOL_COLORS.flame,
-      icon: <DotIcon name="alarm" size={56} />,
+      icon: <RamsIcon name="alarm" size={40} />,
       meta: nextAlarm
         ? `Armed · ${formatMinutesOfDay(nextAlarm.time, prefs.timeFormat)}`
         : "Not set",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ToolScreen } from "@/components/ToolScreen";
 import { TintablePage } from "@/components/TintablePage";
@@ -30,6 +30,13 @@ export default function WeatherPage() {
 
   const cache = weather.cache;
   const condition = cache ? conditionFromCode(cache.data.current.weatherCode) : null;
+
+  // Opening the instrument means you want the current sky — refresh anything
+  // older than two minutes so a brief cached storm code can't linger.
+  const refreshIfStale = weather.refreshIfStale;
+  useEffect(() => {
+    void refreshIfStale(2 * 60 * 1000);
+  }, [refreshIfStale]);
 
   return (
     <TintablePage page="weather">

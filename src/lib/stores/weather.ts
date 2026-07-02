@@ -15,6 +15,8 @@ interface WeatherStore {
   hydrated: boolean;
   hydrate: () => Promise<void>;
   refresh: () => Promise<void>;
+  /** refresh only when the cache is older than `maxAgeMs`; called on page view */
+  refreshIfStale: (maxAgeMs: number) => Promise<void>;
   useMyLocation: () => Promise<void>;
   setLocation: (place: GeocodeResult) => Promise<void>;
 }
@@ -40,8 +42,10 @@ export const useWeather = create<WeatherStore>((set, get) => ({
     const cache = await weatherCacheRepo.get();
     set({ cache, hydrated: true, state: cache ? "ready" : "idle" });
     if (cache) {
-      // Silently refresh stale cached data (older than 30 min)
-      if (Date.now() - cache.fetchedAt > 30 * 60 * 1000) void get().refresh();
+      // Silently refresh cached data older than 10 min. Open-Meteo's current
+      // condition can spike momentarily (e.g. a brief storm code), so we never
+      // want to sit on a stale reading for long.
+      if (Date.now() - cache.fetchedAt > 10 * 60 * 1000) void get().refresh();
       return;
     }
     // First run: default to the home station — Tulsa, OK. City-based, so no
@@ -65,6 +69,12 @@ export const useWeather = create<WeatherStore>((set, get) => ({
     } catch (e) {
       set({ state: get().cache ? "ready" : "error", error: (e as Error).message });
     }
+  },
+
+  refreshIfStale: async (maxAgeMs) => {
+    const { cache, state } = get();
+    if (!cache || state === "loading") return;
+    if (Date.now() - cache.fetchedAt > maxAgeMs) await get().refresh();
   },
 
   useMyLocation: async () => {
