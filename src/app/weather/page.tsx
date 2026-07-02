@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { ToolScreen } from "@/components/ToolScreen";
-import { MechanicalButton, MeasurementRow } from "@/components/controls";
+import { MechanicalButton } from "@/components/controls";
 import { EmptyState, ErrorState, PermissionCard } from "@/components/states";
 import { WeatherGlyph } from "@/components/WeatherGlyph";
 import { useWeather } from "@/lib/stores/weather";
@@ -23,6 +24,7 @@ export default function WeatherPage() {
   const weather = useWeather();
   const prefs = usePrefs((s) => s.prefs);
   const [searchOpen, setSearchOpen] = useState(false);
+  const reduced = useReducedMotion();
 
   const cache = weather.cache;
   const condition = cache ? conditionFromCode(cache.data.current.weatherCode) : null;
@@ -93,38 +95,50 @@ export default function WeatherPage() {
 
         {cache && condition && (
           <>
-            <section className="panel flex flex-col items-center gap-4 px-4 py-8">
+            <section className="panel flex flex-col items-center gap-3 px-4 py-8">
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 className="type-label underline-offset-4 hover:underline"
                 aria-label={`Change location, currently ${cache.locationName}`}
               >
-                {cache.locationName}
+                {cache.locationName} ▾
               </button>
-              <WeatherGlyph kind={condition.kind} size={150} className="text-ink" label={condition.label} />
+              <motion.div
+                key={condition.kind}
+                initial={reduced ? false : { opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <WeatherGlyph
+                  kind={condition.kind}
+                  size={190}
+                  className="text-ink"
+                  label={condition.label}
+                />
+              </motion.div>
               <div className="text-center">
-                <p className="type-measure text-7xl">
+                <p className="type-display text-[84px]">
                   {tempLabel(cache.data.current.temperature, prefs.tempUnit)}
                 </p>
-                <p className="type-meta mt-2">
-                  {condition.label} · Feels like{" "}
+                <p className="type-label mt-2">
+                  {condition.label} · Feels{" "}
                   {tempLabel(cache.data.current.apparentTemperature, prefs.tempUnit)}
                 </p>
               </div>
-            </section>
 
-            <section className="panel-inset px-4 py-1">
-              <MeasurementRow
-                label="Precipitation"
-                value={`${Math.round(cache.data.current.precipitationProbability)}%`}
-              />
-              <MeasurementRow
-                label="Wind"
-                value={`${Math.round(convertWind(cache.data.current.windSpeed, prefs.windUnit).value)}`}
-                sub={`${convertWind(0, prefs.windUnit).label} ${cardinalFromDegrees(cache.data.current.windDirection)}`}
-              />
-              <MeasurementRow label="Humidity" value={`${Math.round(cache.data.current.humidity)}%`} />
+              {/* Stat band */}
+              <div className="mt-3 grid w-full grid-cols-3 border-t border-line pt-4">
+                <Stat
+                  value={`${Math.round(cache.data.current.precipitationProbability)}%`}
+                  label="Precip"
+                />
+                <Stat
+                  value={`${Math.round(convertWind(cache.data.current.windSpeed, prefs.windUnit).value)}`}
+                  label={`${convertWind(0, prefs.windUnit).label} ${cardinalFromDegrees(cache.data.current.windDirection)}`}
+                />
+                <Stat value={`${Math.round(cache.data.current.humidity)}%`} label="Humidity" />
+              </div>
             </section>
 
             <HourlyGraph cache={cache.data.hourly} unit={prefs.tempUnit} />
@@ -165,6 +179,15 @@ export default function WeatherPage() {
   );
 }
 
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="type-display text-xl">{value}</span>
+      <span className="type-label text-[9px]">{label}</span>
+    </div>
+  );
+}
+
 function HourlyGraph({
   cache,
   unit,
@@ -172,6 +195,7 @@ function HourlyGraph({
   cache: Array<{ time: number; temperature: number; precipitationProbability: number }>;
   unit: "celsius" | "fahrenheit";
 }) {
+  const reducedGraph = useReducedMotion();
   const hours = cache.slice(0, 24);
   if (hours.length < 2) return null;
 
@@ -209,7 +233,16 @@ function HourlyGraph({
               strokeDasharray="2 4"
             />
           ))}
-          <path d={path} fill="none" stroke="var(--ink)" strokeWidth={2} strokeLinejoin="round" />
+          <motion.path
+            d={path}
+            fill="none"
+            stroke="var(--ink)"
+            strokeWidth={2}
+            strokeLinejoin="round"
+            initial={reducedGraph ? false : { pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.9, ease: "easeInOut" }}
+          />
           {pts.filter((_, i) => i % 4 === 0).map((p, i) => (
             <circle key={i} cx={p.x} cy={p.y} r={3} fill="var(--accent)" stroke="var(--ink)" />
           ))}

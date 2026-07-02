@@ -113,7 +113,7 @@ export interface WeatherData {
 }
 
 export type ThemeMode = "light" | "dark" | "system";
-export type AccentId = "yellow" | "sage" | "orange" | "ice";
+export type AccentId = "orange" | "flame" | "olive" | "oxide";
 export type TimeFormat = "12h" | "24h";
 export type TempUnit = "celsius" | "fahrenheit";
 export type WindUnit = "kmh" | "mph" | "ms";
@@ -137,7 +137,7 @@ export interface UserPreferences {
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   theme: "system",
-  accent: "yellow",
+  accent: "orange",
   timeFormat: "24h",
   showSeconds: true,
   tempUnit: "celsius",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { ToolScreen } from "@/components/ToolScreen";
 import { MechanicalButton } from "@/components/controls";
 import { EmptyState, PermissionCard } from "@/components/states";
@@ -20,6 +21,7 @@ export default function RecorderPage() {
   const addRecording = useRecordings((s) => s.add);
   const [status, setStatus] = useState<RecStatus>("idle");
   const [elapsed, setElapsed] = useState(0);
+  const reduced = useReducedMotion();
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [storage, setStorage] = useState<string | null>(null);
 
@@ -156,7 +158,37 @@ export default function RecorderPage() {
             onAction={() => void start()}
           />
         ) : (
-          <section className="panel flex flex-col items-center gap-6 px-4 py-8">
+          <section
+            className="flex flex-col items-center gap-6 rounded-[24px] border border-line px-4 py-8"
+            style={
+              {
+                // The tape deck is always instrument-black, in both themes.
+                background: "#17150f",
+                color: "#d9d2c6",
+                "--ink": "#d9d2c6",
+                "--ink-muted": "#8b8577",
+                "--ink-faint": "#514c40",
+                "--surface": "#211e16",
+                "--panel": "#211e16",
+                "--line": "rgba(217, 210, 198, 0.14)",
+                "--line-strong": "rgba(217, 210, 198, 0.34)",
+              } as React.CSSProperties
+            }
+          >
+            <div className="flex items-center gap-3">
+              <motion.span
+                aria-hidden
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: status === "recording" ? "#ed3f1c" : "#514c40" }}
+                animate={
+                  status === "recording" && !reduced ? { opacity: [1, 0.3, 1] } : { opacity: 1 }
+                }
+                transition={{ repeat: status === "recording" ? Infinity : 0, duration: 1.1 }}
+              />
+              <span className="type-label" style={{ color: "#8b8577" }}>
+                {status === "recording" ? "Recording" : status === "paused" ? "Paused" : "Ready"}
+              </span>
+            </div>
             <p className="type-measure segments text-6xl" role="timer">
               {formatDuration(elapsed, active)}
             </p>

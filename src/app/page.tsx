@@ -1,45 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useNow } from "@/lib/hooks/useNow";
 import { usePrefs } from "@/lib/stores/prefs";
 import { useWeather } from "@/lib/stores/weather";
-import { useAlarms, nextEnabledAlarm, nextFireTime } from "@/lib/stores/alarms";
+import { useAlarms, nextEnabledAlarm } from "@/lib/stores/alarms";
 import { useNotes, sortedNotes } from "@/lib/stores/notes";
 import { useEvents, nextUpcomingEvent } from "@/lib/stores/events";
 import { useRadio } from "@/lib/stores/radio";
 import { useRecordings } from "@/lib/stores/recordings";
-import { formatClock, formatDateShort, formatDuration, formatMinutesOfDay, tempLabel } from "@/lib/format";
+import {
+  formatClock,
+  formatDateShort,
+  formatDuration,
+  formatMinutesOfDay,
+  tempLabel,
+} from "@/lib/format";
 import { conditionFromCode } from "@/lib/weather/provider";
 import { WeatherGlyph } from "@/components/WeatherGlyph";
-import { SpeakerPattern, StatusLight } from "@/components/controls";
-import { DotMatrixDisplay } from "@/components/DotMatrixDisplay";
+import { DotIcon } from "@/components/DotIcon";
 
-interface PanelProps {
+/** Fixed identity color per instrument, from the kit palette. */
+const TOOL_COLORS = {
+  orange: "#ed8008",
+  flame: "#ed3f1c",
+  oxide: "#bf1b1b",
+  olive: "#736b1e",
+  ink: "var(--ink)",
+} as const;
+
+interface CardSpec {
   href: string;
-  label: string;
-  span?: "full" | "half";
-  lightOn?: boolean;
-  lightColor?: "accent" | "sage" | "alert";
-  children: ReactNode;
-}
-
-function InstrumentPanel({ href, label, span = "half", lightOn = false, lightColor = "accent", children }: PanelProps) {
-  return (
-    <Link
-      href={href}
-      className={`panel flex min-h-[128px] flex-col justify-between p-4 transition-transform duration-150 active:scale-[0.985] ${
-        span === "full" ? "col-span-2" : ""
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span className="type-label">{label}</span>
-        <StatusLight on={lightOn} color={lightColor} label={`${label} active`} />
-      </div>
-      {children}
-    </Link>
-  );
+  name: string;
+  index: string;
+  icon: ReactNode;
+  color: string;
+  meta: string;
 }
 
 export default function InstrumentBoard() {
@@ -51,6 +49,7 @@ export default function InstrumentBoard() {
   const events = useEvents((s) => s.events);
   const radio = useRadio();
   const recordings = useRecordings((s) => s.recordings);
+  const reduced = useReducedMotion();
 
   const clock = formatClock(now, prefs.timeFormat, prefs.showSeconds);
   const nextAlarm = nextEnabledAlarm(alarms);
@@ -60,176 +59,141 @@ export default function InstrumentBoard() {
   const activeStation = radio.stations.find((s) => s.id === radio.activeId);
   const condition = weather ? conditionFromCode(weather.data.current.weatherCode) : null;
 
+  const cards: CardSpec[] = [
+    {
+      href: "/weather",
+      name: "Weather",
+      index: "01",
+      color: TOOL_COLORS.orange,
+      icon: condition ? (
+        <WeatherGlyph kind={condition.kind} size={64} label={condition.label} />
+      ) : (
+        <DotIcon name="weather" size={56} />
+      ),
+      meta:
+        weather && condition
+          ? `${tempLabel(weather.data.current.temperature, prefs.tempUnit)} ${condition.label}`
+          : "Standby",
+    },
+    {
+      href: "/compass",
+      name: "Compass",
+      index: "02",
+      color: TOOL_COLORS.olive,
+      icon: <DotIcon name="compass" size={56} />,
+      meta: "Tap to engage",
+    },
+    {
+      href: "/radio",
+      name: "Radio",
+      index: "03",
+      color: TOOL_COLORS.flame,
+      icon: <DotIcon name="radio" size={56} />,
+      meta:
+        radio.status === "playing"
+          ? `On air · ${activeStation?.name ?? ""}`
+          : radio.status === "connecting"
+            ? "Tuning…"
+            : (activeStation?.name ?? "Standby"),
+    },
+    {
+      href: "/recorder",
+      name: "Recorder",
+      index: "04",
+      color: TOOL_COLORS.oxide,
+      icon: <DotIcon name="recorder" size={56} />,
+      meta: latestRecording
+        ? `${latestRecording.name.slice(0, 16)} · ${formatDuration(latestRecording.duration)}`
+        : "No takes yet",
+    },
+    {
+      href: "/notes",
+      name: "Notes",
+      index: "05",
+      color: TOOL_COLORS.ink,
+      icon: <DotIcon name="notes" size={56} />,
+      meta: latestNote ? latestNote.title || "Untitled" : "Empty",
+    },
+    {
+      href: "/calendar",
+      name: "Calendar",
+      index: "06",
+      color: TOOL_COLORS.olive,
+      icon: <DotIcon name="calendar" size={56} />,
+      meta: nextEvent
+        ? `${nextEvent.title.slice(0, 14)} · ${formatDateShort(new Date(nextEvent.start))}`
+        : "Nothing scheduled",
+    },
+    {
+      href: "/clock",
+      name: "Clock",
+      index: "07",
+      color: TOOL_COLORS.ink,
+      icon: <DotIcon name="clock" size={56} />,
+      meta: `${clock.time}${clock.suffix ? ` ${clock.suffix}` : ""}`,
+    },
+    {
+      href: "/alarms",
+      name: "Alarm",
+      index: "08",
+      color: TOOL_COLORS.flame,
+      icon: <DotIcon name="alarm" size={56} />,
+      meta: nextAlarm
+        ? `Armed · ${formatMinutesOfDay(nextAlarm.time, prefs.timeFormat)}`
+        : "Not set",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-md px-4 pb-6">
-      {/* Top area */}
-      <header className="flex items-start justify-between pb-4 pt-3">
-        <div>
-          <h1 className="type-title text-2xl">Field Unit</h1>
-          <p className="type-meta mt-1">
-            {formatDateShort(now)}
-            {weather ? ` · ${weather.locationName}` : ""}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="type-measure segments text-xl">{clock.time}</p>
-          {clock.suffix ? <p className="type-meta">{clock.suffix}</p> : null}
-        </div>
+    <div className="mx-auto max-w-md px-5 pb-8">
+      {/* Wordmark header */}
+      <header className="flex items-start justify-between pb-1 pt-4">
+        <h1 className="type-title text-[34px]">
+          FIELD
+          <br />
+          <span className="font-normal lowercase">unit</span>
+        </h1>
+        <p className="type-label pt-1 text-right leading-relaxed">
+          Portable
+          <br />
+          Toolkit — 01
+        </p>
       </header>
+      <p className="type-label pb-5 pt-1 tracking-[0.14em]">
+        {formatDateShort(now)} · {weather?.locationName ?? "Tulsa, OK"}
+      </p>
 
+      {/* Instrument cards */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Clock — full width */}
-        <InstrumentPanel href="/clock" label="Clock" span="full" lightOn>
-          <div className="flex flex-col gap-2">
-            <p className="type-measure segments text-5xl" aria-label={`Current time ${clock.time}`}>
-              {clock.time}
-              {clock.suffix ? (
-                <span className="ml-2 align-baseline text-lg text-ink-muted">{clock.suffix}</span>
-              ) : null}
-            </p>
-            <div className="text-ink-muted">
-              <DotMatrixDisplay
-                text={
-                  Intl.DateTimeFormat()
-                    .resolvedOptions()
-                    .timeZone.split("/")
-                    .pop()
-                    ?.replace(/_/g, " ")
-                    .slice(0, 12) ?? "LOCAL"
-                }
-                dotSize={2.2}
-                gap={1.1}
-              />
-            </div>
-          </div>
-        </InstrumentPanel>
-
-        {/* Weather */}
-        <InstrumentPanel href="/weather" label="Weather" lightOn={Boolean(weather)} lightColor="sage">
-          {weather && condition ? (
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="type-measure text-4xl">
-                  {tempLabel(weather.data.current.temperature, prefs.tempUnit)}
-                </p>
-                <p className="type-meta mt-1">{condition.label}</p>
-              </div>
-              <WeatherGlyph kind={condition.kind} size={52} className="text-ink" />
-            </div>
-          ) : (
-            <p className="text-sm text-ink-muted">Tap to set location</p>
-          )}
-        </InstrumentPanel>
-
-        {/* Compass */}
-        <InstrumentPanel href="/compass" label="Compass">
-          <div className="flex items-end justify-between">
-            <p className="text-sm text-ink-muted">Tap to engage</p>
-            <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden className="text-ink">
-              <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.35" />
-              {Array.from({ length: 24 }, (_, i) => {
-                const a = (i * Math.PI * 2) / 24;
-                return (
-                  <line
-                    key={i}
-                    x1={26 + Math.cos(a) * 21}
-                    y1={26 + Math.sin(a) * 21}
-                    x2={26 + Math.cos(a) * 24}
-                    y2={26 + Math.sin(a) * 24}
-                    stroke="currentColor"
-                    strokeWidth={i % 6 === 0 ? 1.6 : 0.7}
-                    opacity={i % 6 === 0 ? 0.9 : 0.4}
-                  />
-                );
-              })}
-              <polygon points="26,8 29,26 26,22 23,26" fill="var(--alert)" />
-            </svg>
-          </div>
-        </InstrumentPanel>
-
-        {/* Radio — full width with speaker pattern */}
-        <InstrumentPanel
-          href="/radio"
-          label="Radio"
-          span="full"
-          lightOn={radio.status === "playing"}
-          lightColor={radio.status === "error" ? "alert" : "accent"}
-        >
-          <div className="flex items-end justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="text-ink">
-                <DotMatrixDisplay
-                  text={(activeStation?.name ?? "No station").slice(0, 12)}
-                  dotSize={3}
-                  gap={1.4}
-                  fluid
+        {cards.map((card, i) => (
+          <motion.div
+            key={card.href}
+            initial={reduced ? false : { opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.32, delay: reduced ? 0 : i * 0.045, ease: "easeOut" }}
+          >
+            <Link
+              href={card.href}
+              className="panel flex min-h-[168px] flex-col justify-between p-4 transition-transform duration-150 active:scale-[0.985]"
+            >
+              <div className="flex items-start justify-between">
+                <span className="text-ink">{card.icon}</span>
+                <span
+                  aria-hidden
+                  className="mt-1 h-2 w-2 rounded-full"
+                  style={{ background: card.color }}
                 />
               </div>
-              <p className="type-meta mt-2">
-                {radio.status === "playing"
-                  ? "On air"
-                  : radio.status === "connecting"
-                    ? "Tuning…"
-                    : radio.status === "error"
-                      ? "Stream error"
-                      : "Standby"}
-              </p>
-            </div>
-            <SpeakerPattern rows={7} cols={7} dotSize={3.5} gap={4.5} className="shrink-0 text-ink opacity-70" />
-          </div>
-        </InstrumentPanel>
-
-        {/* Recorder */}
-        <InstrumentPanel href="/recorder" label="Recorder" lightColor="alert">
-          {latestRecording ? (
-            <div>
-              <p className="truncate text-sm font-semibold">{latestRecording.name}</p>
-              <p className="type-meta mt-1">{formatDuration(latestRecording.duration)}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-ink-muted">No recordings yet</p>
-          )}
-        </InstrumentPanel>
-
-        {/* Alarm */}
-        <InstrumentPanel href="/alarms" label="Alarm" lightOn={Boolean(nextAlarm)}>
-          {nextAlarm ? (
-            <div>
-              <p className="type-measure segments text-3xl">
-                {formatMinutesOfDay(nextAlarm.time, prefs.timeFormat)}
-              </p>
-              <p className="type-meta mt-1">
-                {nextAlarm.name || formatDateShort(new Date(nextFireTime(nextAlarm)))}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-ink-muted">No alarm set</p>
-          )}
-        </InstrumentPanel>
-
-        {/* Notes */}
-        <InstrumentPanel href="/notes" label="Notes" lightColor="sage">
-          {latestNote ? (
-            <div>
-              <p className="truncate text-sm font-semibold">{latestNote.title || "Untitled"}</p>
-              <p className="type-meta mt-1 line-clamp-1">{latestNote.body || "Empty note"}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-ink-muted">No notes yet</p>
-          )}
-        </InstrumentPanel>
-
-        {/* Calendar */}
-        <InstrumentPanel href="/calendar" label="Calendar" lightColor="sage" lightOn={Boolean(nextEvent)}>
-          {nextEvent ? (
-            <div>
-              <p className="truncate text-sm font-semibold">{nextEvent.title}</p>
-              <p className="type-meta mt-1">{formatDateShort(new Date(nextEvent.start))}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-ink-muted">No upcoming events</p>
-          )}
-        </InstrumentPanel>
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[15px] font-bold">{card.name}</span>
+                  <span className="type-meta">{card.index}</span>
+                </div>
+                <p className="type-meta mt-0.5 truncate">{card.meta}</p>
+              </div>
+            </Link>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
