@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
+import { TintablePage } from "@/components/TintablePage";
 import { MechanicalButton } from "@/components/controls";
 import { PermissionCard } from "@/components/states";
 import { useCompass } from "@/lib/hooks/useCompass";
@@ -15,6 +16,7 @@ export default function CompassPage() {
   const live = compass.status === "active" || compass.status === "demo";
 
   return (
+    <TintablePage page="compass">
     <ToolScreen
       title="Compass"
       mode={compass.status === "demo" ? "DEMO" : live ? "LIVE" : "STANDBY"}
@@ -99,6 +101,7 @@ export default function CompassPage() {
         )}
       </div>
     </ToolScreen>
+    </TintablePage>
   );
 }
 

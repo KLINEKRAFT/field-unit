@@ -124,6 +124,21 @@ export interface WorldClock {
   timeZone: string;
 }
 
+/** Background tints — the five kit palette colors, selectable per page. */
+export type TintId = "orange" | "flame" | "oxide" | "olive" | "greige";
+
+/** Pages that support the background changer (notes intentionally absent). */
+export type TintablePageId =
+  | "home"
+  | "weather"
+  | "compass"
+  | "radio"
+  | "recorder"
+  | "clock"
+  | "alarm"
+  | "calendar"
+  | "settings";
+
 export interface UserPreferences {
   theme: ThemeMode;
   accent: AccentId;
@@ -133,6 +148,8 @@ export interface UserPreferences {
   windUnit: WindUnit;
   aiEnabled: boolean;
   worldClocks: WorldClock[];
+  /** per-page background color choice; absent key = theme default */
+  pageTints: Partial<Record<TintablePageId, TintId>>;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -144,6 +161,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   windUnit: "mph",
   aiEnabled: false,
   worldClocks: [],
+  pageTints: {},
 };
 
 export type PermissionKind = "geolocation" | "motion" | "microphone" | "notifications";

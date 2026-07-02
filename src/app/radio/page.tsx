@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
+import { TintablePage } from "@/components/TintablePage";
 import { MechanicalButton, SpeakerPattern } from "@/components/controls";
 import { Waveform } from "@/components/Waveform";
 import { useRadio } from "@/lib/stores/radio";
 import { playTick } from "@/lib/sound";
 import { motion, useReducedMotion } from "framer-motion";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Plus, Trash2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Plus, Trash2 } from "lucide-react";
 
 export default function RadioPage() {
   const radio = useRadio();
@@ -18,6 +19,7 @@ export default function RadioPage() {
   const playing = radio.status === "playing";
 
   return (
+    <TintablePage page="radio">
     <ToolScreen
       title="Radio"
       mode={
@@ -86,14 +88,6 @@ export default function RadioPage() {
           </RoundButton>
         </div>
 
-        {/* Volume */}
-        <VolumeDots
-          value={radio.muted ? 0 : radio.volume}
-          muted={radio.muted}
-          onChange={radio.setVolume}
-          onToggleMute={() => radio.setMuted(!radio.muted)}
-        />
-
         {/* Presets */}
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -120,7 +114,7 @@ export default function RadioPage() {
                   >
                     <span
                       className="text-[10px] font-bold uppercase tracking-[0.1em]"
-                      style={{ color: isActive ? "var(--accent)" : "var(--ink-muted)" }}
+                      style={{ color: isActive ? "var(--hot, #ed3f1c)" : "var(--ink-muted)" }}
                     >
                       {isActive && playing ? "Live" : `Preset ${String(i + 1).padStart(2, "0")}`}
                     </span>
@@ -155,6 +149,7 @@ export default function RadioPage() {
         </p>
       </div>
     </ToolScreen>
+    </TintablePage>
   );
 }
 
@@ -243,76 +238,6 @@ function TuningScale({ band, reduced }: { band?: string; reduced: boolean }) {
         <circle cx={pad} cy={7} r={4.5} fill="none" stroke="var(--hot, #ed3f1c)" strokeWidth={2} />
       </motion.g>
     </svg>
-  );
-}
-
-const VOLUME_STEPS = 10;
-
-function VolumeDots({
-  value,
-  muted,
-  onChange,
-  onToggleMute,
-}: {
-  value: number;
-  muted: boolean;
-  onChange: (v: number) => void;
-  onToggleMute: () => void;
-}) {
-  const lit = Math.round(value * VOLUME_STEPS);
-  return (
-    <div className="flex items-center justify-between gap-3 px-2">
-      <button
-        type="button"
-        aria-label={muted ? "Unmute" : "Mute"}
-        onClick={() => {
-          playTick();
-          onToggleMute();
-        }}
-        className="flex h-11 w-11 items-center justify-center text-ink"
-      >
-        {muted ? <VolumeX size={20} aria-hidden /> : <Volume2 size={20} aria-hidden />}
-      </button>
-      <div
-        role="slider"
-        aria-label="Volume"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(value * 100)}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight" || e.key === "ArrowUp") onChange(Math.min(1, value + 0.1));
-          if (e.key === "ArrowLeft" || e.key === "ArrowDown") onChange(Math.max(0, value - 0.1));
-        }}
-        className="flex flex-1 items-center justify-between py-3"
-      >
-        {Array.from({ length: VOLUME_STEPS }, (_, i) => (
-          <button
-            key={i}
-            type="button"
-            tabIndex={-1}
-            aria-label={`Volume ${((i + 1) / VOLUME_STEPS) * 100}%`}
-            onClick={() => {
-              playTick();
-              onChange((i + 1) / VOLUME_STEPS);
-            }}
-            className="flex h-11 w-5 items-center justify-center"
-          >
-            <span
-              className="rounded-full transition-all duration-150"
-              style={{
-                width: i < lit ? 10 : 7,
-                height: i < lit ? 10 : 7,
-                background: i < lit ? "var(--ink)" : "var(--ink-faint)",
-              }}
-            />
-          </button>
-        ))}
-      </div>
-      <span className="type-display w-12 text-right text-base" aria-hidden>
-        {Math.round((muted ? 0 : value) * 100)}%
-      </span>
-    </div>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ToolScreen } from "@/components/ToolScreen";
+import { TintablePage } from "@/components/TintablePage";
 import { MechanicalButton } from "@/components/controls";
 import { EmptyState, ErrorState, PermissionCard } from "@/components/states";
 import { WeatherGlyph } from "@/components/WeatherGlyph";
@@ -31,6 +32,7 @@ export default function WeatherPage() {
   const condition = cache ? conditionFromCode(cache.data.current.weatherCode) : null;
 
   return (
+    <TintablePage page="weather">
     <ToolScreen
       title={cache?.locationName ?? "Weather"}
       mode={weather.state === "loading" ? "SYNC" : cache ? "LIVE" : "STANDBY"}
@@ -172,6 +174,7 @@ export default function WeatherPage() {
         )}
       </div>
     </ToolScreen>
+    </TintablePage>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
+import { TintablePage } from "@/components/TintablePage";
 import { MechanicalButton, ToggleSwitch } from "@/components/controls";
 import { DotMatrixDisplay } from "@/components/DotMatrixDisplay";
 import { useAlarms, nextEnabledAlarm, nextFireTime } from "@/lib/stores/alarms";
@@ -28,6 +29,7 @@ export default function AlarmsPage() {
   const timeFormat = usePrefs((s) => s.prefs.timeFormat);
 
   return (
+    <TintablePage page="alarm">
     <ToolScreen
       title="Alarm"
       mode={next ? "ARMED" : "STANDBY"}
@@ -90,6 +92,7 @@ export default function AlarmsPage() {
         </p>
       </div>
     </ToolScreen>
+    </TintablePage>
   );
 }
 

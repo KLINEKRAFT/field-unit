@@ -182,8 +182,22 @@ export const useRadio = create<RadioStore>((set, get) => ({
       }));
       await Promise.all(stations.map((s) => stationRepo.save(s)));
     }
+    // Migration: devices that saved an older default list get KEXP inserted
+    // as preset 01 — it is the house station.
+    const kexpDefault = DEFAULT_STATIONS[0]!;
+    let kexp = stations.find((s) => s.streamUrl === kexpDefault.streamUrl);
+    if (!kexp) {
+      const earliest = Math.min(...stations.map((s) => s.createdAt));
+      kexp = { ...kexpDefault, id: uid(), createdAt: earliest - 1000 };
+      stations.push(kexp);
+      await stationRepo.save(kexp);
+    } else if (stations.some((s) => s.createdAt < kexp!.createdAt)) {
+      // ensure KEXP sorts first
+      kexp.createdAt = Math.min(...stations.map((s) => s.createdAt)) - 1000;
+      await stationRepo.save(kexp);
+    }
     stations.sort((a, b) => a.createdAt - b.createdAt);
-    set({ stations, hydrated: true, activeId: get().activeId ?? stations[0]?.id ?? null });
+    set({ stations, hydrated: true, activeId: get().activeId ?? kexp.id });
   },
 
   addStation: (name, streamUrl) => {
