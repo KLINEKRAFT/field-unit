@@ -5,21 +5,22 @@
 /* ------------------------------------------------------------------ */
 
 :root {
-  /* Light: warm instrument white */
-  --surface: #e9e6df;
-  --panel: #dedbd3;
-  --panel-2: #d3cfc7;
-  --ink: #0a0a09;
-  --ink-muted: #9c9992;
-  --ink-faint: #b9b6ae;
-  --line: rgba(10, 10, 9, 0.14);
-  --line-strong: rgba(10, 10, 9, 0.32);
-  --accent: #ffd84a;
-  --accent-ink: #0a0a09;
-  --sage: #a8b59a;
-  --alert: #d74a3a;
+  /* Light: warm greige — Field Unit palette (user's design kit) */
+  --surface: #d9d2c6;
+  --panel: #deddd9;
+  --panel-2: #d5d4d1;
+  --ink: #080808;
+  --ink-muted: #8f8a7e;
+  --ink-faint: #b3ada0;
+  --line: rgba(8, 8, 8, 0.14);
+  --line-strong: rgba(8, 8, 8, 0.32);
+  --accent: #ed8008;
+  --accent-ink: #080808;
+  --hot: #ed3f1c;
+  --sage: #736b1e;
+  --alert: #bf1b1b;
   --inset-hi: rgba(255, 255, 255, 0.55);
-  --inset-lo: rgba(10, 10, 9, 0.06);
+  --inset-lo: rgba(8, 8, 8, 0.06);
 
   --radius-panel: 24px;
   --radius-control: 16px;
@@ -28,9 +29,10 @@
   --dur-fast: 150ms;
   --dur-panel: 300ms;
 
+  /* Futura ships on Apple devices; geometric fallbacks elsewhere */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
+    Futura, "Futura PT", "Century Gothic", "Avenir Next", "URW Gothic", Jost, -apple-system,
+    "Helvetica Neue", sans-serif;
   --font-mono:
     ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 
@@ -39,31 +41,39 @@
 }
 
 [data-theme="dark"] {
-  --surface: #11110f;
-  --panel: #1c1c19;
-  --panel-2: #2a2925;
-  --ink: #eeeae2;
-  --ink-muted: #8b887f;
-  --ink-faint: #55534c;
-  --line: rgba(238, 234, 226, 0.14);
-  --line-strong: rgba(238, 234, 226, 0.34);
-  --accent: #ffd84a;
-  --accent-ink: #0a0a09;
-  --sage: #a6b498;
-  --alert: #e35a48;
+  /* Instrument black lifted from the icon ink (#17150F) */
+  --surface: #17150f;
+  --panel: #211e16;
+  --panel-2: #2b281e;
+  --ink: #d9d2c6;
+  --ink-muted: #8b8577;
+  --ink-faint: #514c40;
+  --line: rgba(217, 210, 198, 0.14);
+  --line-strong: rgba(217, 210, 198, 0.34);
+  --accent: #ed8008;
+  --accent-ink: #17150f;
+  --hot: #ed3f1c;
+  --sage: #948a2c;
+  --alert: #d2402e;
   --inset-hi: rgba(255, 255, 255, 0.05);
   --inset-lo: rgba(0, 0, 0, 0.35);
 }
 
-/* Curated accent alternatives (Settings → signal color) */
-[data-accent="sage"] {
-  --accent: #a8b59a;
+/* Curated signal-color alternatives (Settings), all from the kit palette */
+[data-accent="flame"] {
+  --accent: #ed3f1c;
+  --accent-ink: #f5f1e9;
 }
-[data-accent="orange"] {
-  --accent: #f0913d;
+[data-accent="olive"] {
+  --accent: #736b1e;
+  --accent-ink: #f5f1e9;
 }
-[data-accent="ice"] {
-  --accent: #b7c9d3;
+[data-accent="oxide"] {
+  --accent: #bf1b1b;
+  --accent-ink: #f5f1e9;
+}
+[data-theme="dark"][data-accent="olive"] {
+  --accent: #948a2c;
 }
 
 @theme inline {
@@ -132,16 +142,25 @@ body {
 .type-title {
   font-family: var(--font-sans);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.01em;
+  line-height: 1.02;
   text-align: left;
+}
+
+/* Big static numerals (temperature, frequency) — Futura Bold */
+.type-display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
 }
 
 .type-label {
   font-family: var(--font-sans);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-muted);
 }

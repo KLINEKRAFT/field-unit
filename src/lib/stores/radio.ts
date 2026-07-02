@@ -7,9 +7,8 @@ import type { RadioStation } from "../types";
 export type StreamStatus = "idle" | "connecting" | "playing" | "error";
 
 const DEFAULT_STATIONS: Array<Omit<RadioStation, "id" | "createdAt">> = [
-  { name: "Groove Salad", streamUrl: "https://ice1.somafm.com/groovesalad-128-mp3", band: "88.1" },
-  { name: "Drone Zone", streamUrl: "https://ice1.somafm.com/dronezone-128-mp3", band: "92.5" },
-  { name: "Secret Agent", streamUrl: "https://ice1.somafm.com/secretagent-128-mp3", band: "96.3" },
+  { name: "KEXP", streamUrl: "https://kexp.streamguys1.com/kexp128.mp3", band: "90.3" },
+  { name: "Groove Salad", streamUrl: "https://ice1.somafm.com/groovesalad-128-mp3", band: "94.1" },
   { name: "Radio Paradise", streamUrl: "https://stream.radioparadise.com/mp3-128", band: "101.7" },
 ];
 

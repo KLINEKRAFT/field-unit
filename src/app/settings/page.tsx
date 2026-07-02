@@ -10,11 +10,12 @@ import type { AccentId, PermissionKind, PermissionStatus, TempUnit, ThemeMode, W
 
 const APP_VERSION = "0.1.0";
 
+/* Signal colors from the Field Unit design-kit palette */
 const ACCENTS: Array<{ id: AccentId; label: string; hex: string }> = [
-  { id: "yellow", label: "Signal yellow", hex: "#ffd84a" },
-  { id: "sage", label: "Muted sage", hex: "#a8b59a" },
-  { id: "orange", label: "Safety orange", hex: "#f0913d" },
-  { id: "ice", label: "Instrument ice", hex: "#b7c9d3" },
+  { id: "orange", label: "Signal orange", hex: "#ed8008" },
+  { id: "flame", label: "Flame", hex: "#ed3f1c" },
+  { id: "olive", label: "Olive", hex: "#736b1e" },
+  { id: "oxide", label: "Oxide red", hex: "#bf1b1b" },
 ];
 
 export default function SettingsPage() {

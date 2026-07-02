@@ -39,8 +39,20 @@ export const useWeather = create<WeatherStore>((set, get) => ({
   hydrate: async () => {
     const cache = await weatherCacheRepo.get();
     set({ cache, hydrated: true, state: cache ? "ready" : "idle" });
-    // Silently refresh stale cached data (older than 30 min)
-    if (cache && Date.now() - cache.fetchedAt > 30 * 60 * 1000) void get().refresh();
+    if (cache) {
+      // Silently refresh stale cached data (older than 30 min)
+      if (Date.now() - cache.fetchedAt > 30 * 60 * 1000) void get().refresh();
+      return;
+    }
+    // First run: default to the home station — Tulsa, OK. City-based, so no
+    // permission prompt; "use my location" remains available on the dial.
+    try {
+      set({ state: "loading" });
+      const tulsa = await fetchAndCache(36.154, -95.9928, "Tulsa, OK");
+      set({ cache: tulsa, state: "ready" });
+    } catch {
+      set({ state: "idle" });
+    }
   },
 
   refresh: async () => {

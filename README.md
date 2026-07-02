@@ -7,10 +7,11 @@ into one calm, tactile device. Built as an installable, offline-capable PWA.
 > Working title was “Instrument OS”; the repo name **Field Unit** stuck — it describes the
 > product better: one piece of field equipment with multiple operating modes.
 
-The design system draws on Dieter Rams / Braun-era industrial electronics: Swiss typography,
-warm instrument white and instrument black, signal yellow used sparingly, precise circular
-geometry, dot-matrix displays and perforated speaker patterns — original work in that spirit,
-not a copy of any product.
+The design system draws on Dieter Rams / Braun-era industrial electronics, built around the
+owner's design kit: Futura typography, a warm greige-and-instrument-black surface palette with
+signal orange / flame / olive / oxide accents (`ED8008 · ED3F1C · 736B1E · BF1B1B · D9D2C6`),
+precise circular geometry, the kit's dot-matrix weather icons, and generative 15×15 dot-grid
+instrument icons.
 
 ## Stack
 

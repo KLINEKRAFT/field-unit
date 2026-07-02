@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
 import { MechanicalButton, SpeakerPattern } from "@/components/controls";
-import { DotMatrixDisplay } from "@/components/DotMatrixDisplay";
-import { RotaryDial } from "@/components/RotaryDial";
 import { useRadio } from "@/lib/stores/radio";
+import { playTick } from "@/lib/sound";
 import { motion, useReducedMotion } from "framer-motion";
-import { Play, Pause, SkipBack, SkipForward, VolumeX, Volume2, Plus, Trash2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Plus, Trash2 } from "lucide-react";
 
 export default function RadioPage() {
   const radio = useRadio();
@@ -15,124 +14,133 @@ export default function RadioPage() {
   const reduced = useReducedMotion();
 
   const active = radio.stations.find((s) => s.id === radio.activeId);
-  const activeIndex = radio.stations.findIndex((s) => s.id === radio.activeId);
   const playing = radio.status === "playing";
 
   return (
     <ToolScreen
       title="Radio"
-      mode={playing ? "ON AIR" : radio.status === "connecting" ? "TUNING" : radio.status === "error" ? "FAULT" : "STANDBY"}
+      mode={
+        playing
+          ? "ON AIR"
+          : radio.status === "connecting"
+            ? "TUNING"
+            : radio.status === "error"
+              ? "FAULT"
+              : "STANDBY"
+      }
       lightOn={playing || radio.status === "connecting"}
       lightColor={radio.status === "error" ? "alert" : "accent"}
     >
-      <div className="mx-auto flex max-w-md flex-col gap-5">
-        {/* Frequency-style display */}
-        <section className="panel flex flex-col gap-5 p-5">
-          <div className="panel-inset flex flex-col gap-3 p-4">
-            <div className="flex items-baseline justify-between">
-              <span className="type-measure segments text-5xl">{active?.band ?? "--.-"}</span>
-              <span className="type-label">{playing ? "Stereo" : radio.status === "error" ? "No signal" : "Muted air"}</span>
-            </div>
-            <div className="text-ink">
-              <DotMatrixDisplay
-                text={(active?.name ?? "No station").slice(0, 14)}
-                dotSize={3.4}
-                gap={1.6}
-                showGrid
-                fluid
-                label={`Station: ${active?.name ?? "none"}`}
-              />
-            </div>
-            <p className="type-meta" role="status">
-              {radio.status === "error"
-                ? "Stream failed — check the URL or try another preset."
-                : radio.nowPlaying ?? (playing ? "Live stream" : "Press play to tune in")}
-            </p>
-          </div>
-
-          {/* Tuning scale */}
-          <TuningScale count={radio.stations.length} activeIndex={activeIndex} reduced={Boolean(reduced)} />
-
-          {/* Transport */}
-          <div className="flex items-center justify-center gap-3">
-            <MechanicalButton ariaLabel="Previous preset" onClick={radio.prev} className="h-14 w-14">
-              <SkipBack size={18} aria-hidden />
-            </MechanicalButton>
-            <MechanicalButton
-              ariaLabel={playing ? "Pause" : "Play"}
-              variant="primary"
-              onClick={radio.toggle}
-              className="h-[72px] w-[72px] rounded-full"
-            >
-              {playing ? <Pause size={26} aria-hidden /> : <Play size={26} aria-hidden className="ml-1" />}
-            </MechanicalButton>
-            <MechanicalButton ariaLabel="Next preset" onClick={radio.next} className="h-14 w-14">
-              <SkipForward size={18} aria-hidden />
-            </MechanicalButton>
-          </div>
-
-          {/* Volume + speaker */}
-          <div className="flex items-center justify-between px-2">
-            <RotaryDial value={radio.volume} onChange={radio.setVolume} label="Volume" size={92} />
-            <div className="flex flex-col items-center gap-3">
-              <motion.div
-                animate={playing && !reduced ? { opacity: [0.55, 0.9, 0.55] } : { opacity: 0.55 }}
-                transition={{ repeat: playing ? Infinity : 0, duration: 1.6 }}
-                className="text-ink"
-              >
-                <SpeakerPattern rows={9} cols={9} dotSize={4} gap={5} />
-              </motion.div>
-              <MechanicalButton
-                size="sm"
-                ariaLabel={radio.muted ? "Unmute" : "Mute"}
-                active={radio.muted}
-                onClick={() => radio.setMuted(!radio.muted)}
-              >
-                {radio.muted ? <VolumeX size={16} aria-hidden /> : <Volume2 size={16} aria-hidden />}
-                {radio.muted ? "Muted" : "Mute"}
-              </MechanicalButton>
-            </div>
-          </div>
+      <div className="mx-auto flex max-w-md flex-col gap-6">
+        {/* Frequency display */}
+        <section className="flex flex-col items-center gap-1 pt-2 text-center">
+          <p className="type-display text-[76px]" aria-label={`Frequency ${active?.band ?? "none"}`}>
+            {active?.band ?? "——"}
+            <span className="ml-2 align-middle text-base font-bold">MHz</span>
+          </p>
+          <p className="text-lg font-bold uppercase tracking-[0.08em]">
+            {active?.name ?? "No station"}
+          </p>
+          <p className="type-label" role="status">
+            {radio.status === "error"
+              ? "No signal — try another preset"
+              : playing
+                ? "Stereo · Live stream"
+                : radio.status === "connecting"
+                  ? "Tuning…"
+                  : "Standby"}
+          </p>
         </section>
 
+        {/* Speaker field */}
+        <motion.div
+          className="flex justify-center text-ink"
+          animate={playing && !reduced ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.85 }}
+          transition={{ repeat: playing ? Infinity : 0, duration: 1.8, ease: "easeInOut" }}
+        >
+          <SpeakerPattern rows={11} cols={11} dotSize={13} gap={11} />
+        </motion.div>
+
+        {/* Tuning scale */}
+        <TuningScale band={active?.band} reduced={Boolean(reduced)} />
+
+        {/* Transport */}
+        <div className="flex items-center justify-center gap-5">
+          <RoundButton label="Previous preset" onClick={radio.prev}>
+            <SkipBack size={18} aria-hidden />
+          </RoundButton>
+          <RoundButton label={playing ? "Pause" : "Play"} onClick={radio.toggle} size={76} primary>
+            {playing ? <Pause size={26} aria-hidden /> : <Play size={26} aria-hidden className="ml-1" />}
+          </RoundButton>
+          <RoundButton label="Next preset" onClick={radio.next}>
+            <SkipForward size={18} aria-hidden />
+          </RoundButton>
+        </div>
+
+        {/* Volume */}
+        <VolumeDots
+          value={radio.muted ? 0 : radio.volume}
+          muted={radio.muted}
+          onChange={radio.setVolume}
+          onToggleMute={() => radio.setMuted(!radio.muted)}
+        />
+
         {/* Presets */}
-        <section className="flex flex-col gap-2">
+        <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="type-label">Presets</h2>
             <MechanicalButton size="sm" variant="ghost" onClick={() => setManaging(!managing)}>
               {managing ? "Done" : "Edit"}
             </MechanicalButton>
           </div>
-          {radio.stations.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => radio.play(s.id)}
-                aria-pressed={s.id === radio.activeId}
-                className={`control flex min-h-[52px] flex-1 items-center justify-between px-4 text-sm ${
-                  s.id === radio.activeId ? "bg-accent text-accent-ink" : ""
-                }`}
-              >
-                <span className="font-semibold">{s.name}</span>
-                <span className="segments text-xs opacity-70">P{i + 1}</span>
-              </button>
-              {managing && (
-                <button
-                  type="button"
-                  aria-label={`Delete ${s.name}`}
-                  onClick={() => radio.removeStation(s.id)}
-                  className="control flex h-[52px] w-[52px] items-center justify-center"
-                  style={{ color: "var(--alert)" }}
-                >
-                  <Trash2 size={16} aria-hidden />
-                </button>
-              )}
-            </div>
-          ))}
+          <div className="grid grid-cols-3 gap-2">
+            {radio.stations.map((s, i) => {
+              const isActive = s.id === radio.activeId;
+              return (
+                <div key={s.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playTick();
+                      radio.play(s.id);
+                    }}
+                    aria-pressed={isActive}
+                    className={`flex min-h-[76px] w-full flex-col justify-between rounded-[16px] border p-3 text-left transition-colors duration-150 ${
+                      isActive ? "border-transparent bg-ink" : "border-line bg-panel"
+                    }`}
+                  >
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-[0.1em]"
+                      style={{ color: isActive ? "var(--accent)" : "var(--ink-muted)" }}
+                    >
+                      {isActive && playing ? "Live" : `Preset ${String(i + 1).padStart(2, "0")}`}
+                    </span>
+                    <span
+                      className="type-display truncate text-xl"
+                      style={{ color: isActive ? "var(--surface)" : "var(--ink)" }}
+                    >
+                      {s.band ?? s.name.slice(0, 6)}
+                    </span>
+                  </button>
+                  {managing && (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${s.name}`}
+                      onClick={() => radio.removeStation(s.id)}
+                      className="absolute -right-1.5 -top-1.5 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface"
+                      style={{ color: "var(--alert)" }}
+                    >
+                      <Trash2 size={13} aria-hidden />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
           {managing && <AddStationForm onAdd={radio.addStation} />}
         </section>
 
-        <p className="type-meta px-2 text-center">
+        <p className="type-meta px-2 pb-2 text-center">
           Playback continues while you use other instruments. iOS may pause audio when the app is
           backgrounded for a long time.
         </p>
@@ -141,49 +149,161 @@ export default function RadioPage() {
   );
 }
 
-function TuningScale({
-  count,
-  activeIndex,
-  reduced,
+function RoundButton({
+  children,
+  label,
+  onClick,
+  size = 56,
+  primary = false,
 }: {
-  count: number;
-  activeIndex: number;
-  reduced: boolean;
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  size?: number;
+  primary?: boolean;
 }) {
-  const w = 320;
-  const h = 40;
-  const pad = 14;
-  const x =
-    count > 1 && activeIndex >= 0 ? pad + (activeIndex / (count - 1)) * (w - pad * 2) : w / 2;
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label={`Preset ${activeIndex + 1} of ${count}`}>
-      {Array.from({ length: 33 }, (_, i) => {
-        const tx = pad + (i / 32) * (w - pad * 2);
-        const major = i % 4 === 0;
+    <button
+      type="button"
+      aria-label={label}
+      onClick={() => {
+        playTick();
+        onClick();
+      }}
+      className="flex items-center justify-center rounded-full border transition-transform duration-150 active:scale-95"
+      style={{
+        width: size,
+        height: size,
+        borderColor: "var(--line-strong)",
+        borderWidth: primary ? 2 : 1,
+        background: "transparent",
+        color: "var(--ink)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const SCALE_MIN = 88;
+const SCALE_MAX = 108;
+
+function TuningScale({ band, reduced }: { band?: string; reduced: boolean }) {
+  const w = 340;
+  const h = 52;
+  const pad = 12;
+  const freq = Math.min(SCALE_MAX, Math.max(SCALE_MIN, Number(band) || SCALE_MIN));
+  const x = pad + ((freq - SCALE_MIN) / (SCALE_MAX - SCALE_MIN)) * (w - pad * 2);
+  const stops = [88, 92, 96, 100, 104, 108];
+
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className="w-full"
+      role="img"
+      aria-label={`Tuned to ${band ?? "nothing"} megahertz`}
+    >
+      {Array.from({ length: 41 }, (_, i) => {
+        const tx = pad + (i / 40) * (w - pad * 2);
+        const major = i % 8 === 0;
         return (
-          <line
-            key={i}
-            x1={tx}
-            x2={tx}
-            y1={h - 8}
-            y2={h - 8 - (major ? 16 : 9)}
-            stroke="var(--ink)"
-            strokeWidth={major ? 1.6 : 0.8}
-            opacity={major ? 0.8 : 0.35}
-          />
+          <circle key={i} cx={tx} cy={20} r={major ? 2.4 : 1.4} fill="var(--ink)" opacity={major ? 0.9 : 0.35} />
         );
       })}
-      <motion.line
-        x1={x}
-        x2={x}
-        y1={4}
-        y2={h - 4}
-        stroke="var(--alert)"
-        strokeWidth={2.4}
-        animate={{ x1: x, x2: x }}
-        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 26 }}
-      />
+      {stops.map((f) => (
+        <text
+          key={f}
+          x={pad + ((f - SCALE_MIN) / (SCALE_MAX - SCALE_MIN)) * (w - pad * 2)}
+          y={h - 6}
+          textAnchor="middle"
+          fontSize={11}
+          fontWeight={600}
+          fill="var(--ink-muted)"
+          fontFamily="var(--font-sans)"
+        >
+          {f}
+        </text>
+      ))}
+      {/* needle: circle head + stem, like the comp */}
+      <motion.g
+        animate={{ x: x - pad }}
+        initial={false}
+        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 220, damping: 24 }}
+      >
+        <line x1={pad} x2={pad} y1={10} y2={30} stroke="var(--hot, #ed3f1c)" strokeWidth={2} />
+        <circle cx={pad} cy={7} r={4.5} fill="none" stroke="var(--hot, #ed3f1c)" strokeWidth={2} />
+      </motion.g>
     </svg>
+  );
+}
+
+const VOLUME_STEPS = 10;
+
+function VolumeDots({
+  value,
+  muted,
+  onChange,
+  onToggleMute,
+}: {
+  value: number;
+  muted: boolean;
+  onChange: (v: number) => void;
+  onToggleMute: () => void;
+}) {
+  const lit = Math.round(value * VOLUME_STEPS);
+  return (
+    <div className="flex items-center justify-between gap-3 px-2">
+      <button
+        type="button"
+        aria-label={muted ? "Unmute" : "Mute"}
+        onClick={() => {
+          playTick();
+          onToggleMute();
+        }}
+        className="flex h-11 w-11 items-center justify-center text-ink"
+      >
+        {muted ? <VolumeX size={20} aria-hidden /> : <Volume2 size={20} aria-hidden />}
+      </button>
+      <div
+        role="slider"
+        aria-label="Volume"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(value * 100)}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") onChange(Math.min(1, value + 0.1));
+          if (e.key === "ArrowLeft" || e.key === "ArrowDown") onChange(Math.max(0, value - 0.1));
+        }}
+        className="flex flex-1 items-center justify-between py-3"
+      >
+        {Array.from({ length: VOLUME_STEPS }, (_, i) => (
+          <button
+            key={i}
+            type="button"
+            tabIndex={-1}
+            aria-label={`Volume ${((i + 1) / VOLUME_STEPS) * 100}%`}
+            onClick={() => {
+              playTick();
+              onChange((i + 1) / VOLUME_STEPS);
+            }}
+            className="flex h-11 w-5 items-center justify-center"
+          >
+            <span
+              className="rounded-full transition-all duration-150"
+              style={{
+                width: i < lit ? 10 : 7,
+                height: i < lit ? 10 : 7,
+                background: i < lit ? "var(--ink)" : "var(--ink-faint)",
+              }}
+            />
+          </button>
+        ))}
+      </div>
+      <span className="type-display w-12 text-right text-base" aria-hidden>
+        {Math.round((muted ? 0 : value) * 100)}%
+      </span>
+    </div>
   );
 }
 

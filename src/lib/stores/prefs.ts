@@ -25,7 +25,7 @@ export function applyThemeToDocument(prefs: UserPreferences): void {
     /* private mode */
   }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", dark ? "#11110f" : "#e9e6df");
+  if (meta) meta.setAttribute("content", dark ? "#17150f" : "#d9d2c6");
 }
 
 export const usePrefs = create<PrefsStore>((set, get) => ({
