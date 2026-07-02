@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ToolScreen } from "@/components/ToolScreen";
+import { TintablePage } from "@/components/TintablePage";
 import { MechanicalButton, ToggleSwitch } from "@/components/controls";
 import { DotMatrixDisplay } from "@/components/DotMatrixDisplay";
 import { useNow } from "@/lib/hooks/useNow";
@@ -19,6 +20,7 @@ export default function ClockPage() {
   const timerStatus = useTimer((s) => s.status);
 
   return (
+    <TintablePage page="clock">
     <ToolScreen
       title={mode === "clock" ? "Clock" : mode === "timer" ? "Timer" : "Stopwatch"}
       mode={mode.toUpperCase()}
@@ -44,6 +46,7 @@ export default function ClockPage() {
         {mode === "stopwatch" && <StopwatchMode />}
       </div>
     </ToolScreen>
+    </TintablePage>
   );
 }
 

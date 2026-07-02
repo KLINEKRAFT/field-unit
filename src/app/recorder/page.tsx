@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ToolScreen } from "@/components/ToolScreen";
+import { TintablePage } from "@/components/TintablePage";
 import { MechanicalButton } from "@/components/controls";
 import { Waveform } from "@/components/Waveform";
 import { useRecordings } from "@/lib/stores/recordings";
@@ -173,17 +174,7 @@ export default function RecorderPage() {
   const active = status === "recording" || status === "paused";
 
   return (
-    <div
-      className="min-h-full"
-      style={{
-        ...DARK_VARS,
-        // bleed the dark surface into the PWA safe areas
-        marginTop: "calc(-1 * (var(--sat) + 10px))",
-        paddingTop: "calc(var(--sat) + 10px)",
-        marginBottom: "calc(-1 * (var(--sab) + 28px))",
-        paddingBottom: "calc(var(--sab) + 28px)",
-      }}
-    >
+    <TintablePage page="recorder" defaultVars={DARK_VARS}>
       <ToolScreen
         title="Recorder"
         mode={status === "recording" ? "REC" : status === "paused" ? "PAUSED" : "LOCAL"}
@@ -212,7 +203,7 @@ export default function RecorderPage() {
                 <motion.span
                   aria-hidden
                   className="h-2 w-2 rounded-full"
-                  style={{ background: status === "recording" ? "#ed3f1c" : "#514c40" }}
+                  style={{ background: status === "recording" ? "#ed3f1c" : "var(--ink-faint)" }}
                   animate={
                     status === "recording" && !reduced ? { opacity: [1, 0.3, 1] } : { opacity: 1 }
                   }
@@ -255,9 +246,9 @@ export default function RecorderPage() {
                   }}
                 >
                   {active ? (
-                    <Square size={24} fill="#d9d2c6" color="#d9d2c6" aria-hidden />
+                    <Square size={24} fill="var(--ink)" color="var(--ink)" aria-hidden />
                   ) : (
-                    <span aria-hidden className="block h-9 w-9 rounded-full" style={{ background: "#bf1b1b" }} />
+                    <span aria-hidden className="block h-9 w-9 rounded-full" style={{ background: "var(--alert)" }} />
                   )}
                 </button>
                 {active && (
@@ -306,7 +297,7 @@ export default function RecorderPage() {
           </section>
         </div>
       </ToolScreen>
-    </div>
+    </TintablePage>
   );
 }
 

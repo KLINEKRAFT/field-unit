@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { TintablePage } from "@/components/TintablePage";
 import { usePrefs } from "@/lib/stores/prefs";
 import { MechanicalButton, ToggleSwitch } from "@/components/controls";
 import { exportAllData, importAllData, deleteAllData, type ExportBundle } from "@/lib/db";
@@ -26,6 +27,7 @@ export default function SettingsPage() {
   const update = usePrefs((s) => s.update);
 
   return (
+    <TintablePage page="settings">
     <div className="mx-auto flex max-w-md flex-col gap-6 px-6 pb-8">
       <header className="pb-1 pt-1">
         <button
@@ -125,6 +127,7 @@ export default function SettingsPage() {
         </p>
       </Section>
     </div>
+    </TintablePage>
   );
 }
 

@@ -21,6 +21,7 @@ import {
 import { conditionFromCode } from "@/lib/weather/provider";
 import { WeatherGlyph } from "@/components/WeatherGlyph";
 import { DotIcon } from "@/components/DotIcon";
+import { TintablePage } from "@/components/TintablePage";
 import { Settings } from "lucide-react";
 
 /** Fixed identity color per instrument, from the kit palette. */
@@ -146,6 +147,7 @@ export default function InstrumentBoard() {
   ];
 
   return (
+    <TintablePage page="home">
     <div className="mx-auto max-w-md px-6 pb-6">
       {/* Wordmark header */}
       <header className="flex items-start justify-between pb-1 pt-4">
@@ -206,5 +208,6 @@ export default function InstrumentBoard() {
         ))}
       </div>
     </div>
+    </TintablePage>
   );
 }

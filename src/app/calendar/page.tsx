@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TintablePage } from "@/components/TintablePage";
 import { useEvents, eventsOnDay } from "@/lib/stores/events";
 import { usePrefs } from "@/lib/stores/prefs";
 import { MechanicalButton } from "@/components/controls";
@@ -49,6 +50,7 @@ export default function CalendarPage() {
   };
 
   return (
+    <TintablePage page="calendar">
     <div className="mx-auto max-w-md px-6 pb-8">
       <header className="pb-2 pt-1">
         <div className="flex items-center justify-between">
@@ -154,6 +156,7 @@ export default function CalendarPage() {
         />
       )}
     </div>
+    </TintablePage>
   );
 }
 
